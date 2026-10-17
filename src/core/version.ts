@@ -6,7 +6,6 @@ import { getIgnoreVersion, getIgnoreVersionFailTipTime, saveIgnoreVersion, saveI
 import { showVersionModal } from '@/navigation'
 import { Navigation } from 'react-native-navigation'
 import { toast } from '@/utils/tools'
-import { isWatch } from '@/utils/watchMode'
 
 export const showModal = () => {
   if (versionState.showModal) return
@@ -21,10 +20,6 @@ export const hideModal = (componentId: string) => {
 }
 
 export const checkUpdate = async() => {
-  // 手表版：包名与版本号都和官方不同，更新检查只会误报
-  // （之前 1.9.1-watch 会被判定成比 1.9.1 旧，一直提示"发现新版本"）
-  if (isWatch()) return
-
   versionActions.setVersionInfo({ status: 'checking' })
   let versionInfo: InitState['versionInfo'] = { ...versionState.versionInfo }
   try {

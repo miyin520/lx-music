@@ -10,7 +10,6 @@ import { useI18n } from '@/lang'
 import { useVersionDownloadProgressUpdated, useVersionInfo } from '@/store/version/hook'
 import Text from '@/components/common/Text'
 import { showModal } from '@/core/version'
-import { isWatch } from '@/utils/watchMode'
 
 const currentVer = process.versions.app
 export default memo(() => {
@@ -22,7 +21,6 @@ export default memo(() => {
   const progress = useVersionDownloadProgressUpdated()
   const handleOpenVersionModal = () => {
     // 表盘版：完全不检查更新，也不弹更新窗口
-    if (isWatch()) return
     // setVersionInfo({ showModal: true })
     showModal()
   }

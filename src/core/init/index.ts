@@ -14,7 +14,6 @@ import settingState from '@/store/setting/state'
 import { checkUpdate } from '@/core/version'
 import { bootLog } from '@/utils/bootLog'
 import { cheatTip } from '@/utils/tools'
-import { isWatch } from '@/utils/watchMode'
 
 let isFirstPush = true
 const handlePushedHomeScreen = async() => {
@@ -23,7 +22,7 @@ const handlePushedHomeScreen = async() => {
     if (isFirstPush) {
       isFirstPush = false
       // 手表版：不做更新检查，避免弹出更新提示
-      if (!isWatch()) void checkUpdate()
+      void checkUpdate()
       void initDeeplink()
     }
   } else {
