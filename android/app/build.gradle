@@ -50,7 +50,12 @@ react {
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
     //   本机为 aarch64，官方只提供 x86-64 的 hermesc，这里指向 qemu-user 包装脚本
-    hermesCommand = "/root/work/lx/tools/hermesc"
+    // 本机（aarch64）需要通过 qemu 包装的 hermesc；其他机器上该路径不存在，
+    // 保持默认行为即可。这样仓库在任何机器上都能构建。
+    def localHermesc = "/root/work/lx/tools/hermesc"
+    if (new File(localHermesc).exists()) {
+        hermesCommand = localHermesc
+    }
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
