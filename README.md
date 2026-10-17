@@ -1,117 +1,89 @@
-<p align="center"><a href="https://github.com/lyswhut/lx-music-mobile"><img width="200" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/icon.png" alt="lx-music logo"></a></p>
+<p align="center"><img width="180" src="https://github.com/lyswhut/lx-music-mobile/raw/master/doc/images/icon.png" alt="LX Music"></p>
 
-<h1 align="center">LX Music 移动版</h1>
+<h1 align="center">LX 手表版</h1>
 
 <p align="center">
-  <a href="https://github.com/lyswhut/lx-music-mobile/releases"><img src="https://img.shields.io/github/release/lyswhut/lx-music-mobile" alt="Release version"></a>
-  <a href="https://github.com/lyswhut/lx-music-mobile/actions/workflows/release.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/lyswhut/lx-music-mobile/actions/workflows/beta-pack.yml"><img src="https://github.com/lyswhut/lx-music-mobile/workflows/Build%20Beta/badge.svg" alt="Build status"></a>
-  <a href="https://github.com/facebook/react-native"><img src="https://img.shields.io/github/package-json/dependency-version/lyswhut/lx-music-mobile/react-native/master" alt="React native version"></a>
-  <!-- <a href="https://github.com/lyswhut/lx-music-mobile/releases"><img src="https://img.shields.io/github/downloads/lyswhut/lx-music-mobile/latest/total" alt="Downloads"></a> -->
-  <a href="https://github.com/lyswhut/lx-music-mobile/tree/dev"><img src="https://img.shields.io/github/package-json/v/lyswhut/lx-music-mobile/dev" alt="Dev branch version"></a>
-  <!-- <a href="https://github.com/lyswhut/lx-music-mobile/blob/master/LICENSE"><img src="https://img.shields.io/github/license/lyswhut/lx-music-mobile" alt="License"></a> -->
+  基于 <a href="https://github.com/lyswhut/lx-music-mobile">LX Music 移动版</a> 1.9.1 修改的<b>手表适配版本</b><br>
+  针对 410×502 / 466×466 等小屏圆角表盘重新排版，可独立安装，与官方版共存
 </p>
 
-<p align="center">一个基于 React Native 开发的音乐软件</p>
-
-## 说明
-
-所用技术栈：
-
-- React Native
-- Redux
-
-已支持的平台：
-
-- Android 5 及以上
-
-***注：目前没有计划支持 iOS 和 HarmonyOS NEXT**。*<br>
-*桌面版项目地址：<https://github.com/lyswhut/lx-music-desktop>*<br>
-*LX Music 项目发展调整与新项目计划：https://github.com/lyswhut/lx-music-desktop/issues/1912*
-
-软件变化请查看[更新日志](https://github.com/lyswhut/lx-music-mobile/blob/master/CHANGELOG.md)。
-
-软件下载请查看 [GitHub Releases](https://github.com/lyswhut/lx-music-mobile/releases)。
-
-使用常见问题请参阅[移动版常见问题](https://lyswhut.github.io/lx-music-doc/mobile/faq)。
-
-目前本项目的原始发布地址只有 [**GitHub**](https://github.com/lyswhut/lx-music-mobile/releases)，其他渠道均为第三方转载发布，与本项目无关！
-
-为了提高使用门槛，本软件内的默认设置、UI 操作不以新手友好为目标，所以使用前建议先根据你的喜好浏览调整一遍软件设置，阅读一遍[音乐播放列表机制](https://lyswhut.github.io/lx-music-doc/mobile/faq/playlist)。
-
-### 数据同步服务
-
-从 v1.0.0 起，我们发布了一个独立的[数据同步服务](https://github.com/lyswhut/lx-music-sync-server#readme)。如果你有服务器，可以将其部署到服务器上作为私人多端同步服务使用，详情看该项目说明。
-
-## 贡献代码
-
-本项目欢迎 PR，但为了 PR 能顺利合并，需要注意以下几点：
-
-- 对于添加新功能的 PR，建议在提交 PR 前先创建 Issue 进行说明，以确认该功能是否确实需要；
-- 对于修复 bug 的 PR，请提供修复前后的说明及重现方式；
-- 对于其他类型的 PR，则适当附上说明。
-
-贡献代码步骤：
-
-1. 参照[源码使用方法](https://lyswhut.github.io/lx-music-doc/mobile/use-source-code)设置开发环境；
-2. 克隆本仓库代码并切换至 `dev` 分支进行开发；
-3. 提交 PR 至 `dev` 分支。
-
-<!--
-## 用户界面
-
-<p><img width="100%" src="https://github.com/lyswhut/lx-music-mobile/blob/master/doc/images/app.png" alt="lx-music mobile UI"></p> -->
-
-## 项目协议
-
-本项目基于 [Apache License 2.0](https://github.com/lyswhut/lx-music-mobile/blob/master/LICENSE) 许可证发行，以下协议是对于 Apache License 2.0 的补充，如有冲突，以以下协议为准。
-
 ---
 
-*词语约定：本协议中的“本项目”指 LX Music（洛雪音乐）移动版项目；“使用者”指签署本协议的使用者；“官方音乐平台”指对本项目内置的包括酷我、酷狗、咪咕等音乐源的官方平台统称；“版权数据”指包括但不限于图像、音频、名字等在内的他人拥有所属版权的数据。*
+## 这是什么
 
-### 一、数据来源
+把 LX Music 移动版搬到了智能手表上。**不是官方版本**，是个人修改版，只保证自己手表上能用。
 
-1.1 本项目的各官方平台在线数据来源原理是从其公开服务器中拉取数据（与未登录状态在官方平台 APP 获取的数据相同），经过对数据简单地筛选与合并后进行展示，因此本项目不对数据的合法性、准确性负责。
+- 包名：`cn.dsh.lxmusic.watch`（**与官方版 `cn.toside.music.mobile` 不冲突，可同时安装**）
+- 应用名：LX 手表版
+- 基于版本：LX Music 移动版 v1.9.1
 
-1.2 本项目本身没有获取某个音频数据的能力，本项目使用的在线音频数据来源来自软件设置内“自定义源”设置所选择的“源”返回的在线链接。例如播放某首歌，本项目所做的只是将希望播放的歌曲名、艺术家等信息传递给“源”，若“源”返回了一个链接，则本项目将认为这就是该歌曲的音频数据而进行使用，至于这是不是正确的音频数据本项目无法校验其准确性，所以使用本项目的过程中可能会出现希望播放的音频与实际播放的音频不对应或者无法播放的问题。
+## 下载安装
 
-1.3 本项目的非官方平台数据（例如“我的列表”内列表）来自使用者本地系统或者使用者连接的同步服务，本项目不对这些数据的合法性、准确性负责。
+到 [Releases](../../releases) 页面下载最新的 `LX手表版.apk`，传到手表上安装即可。
 
-### 二、版权数据
+要求：Android 6.0+、arm64-v8a。
 
-2.1 使用本项目的过程中可能会产生版权数据。对于这些版权数据，本项目不拥有它们的所有权。为了避免侵权，使用者务必在 **24 小时内** 清除使用本项目的过程中所产生的版权数据。
+## 手表上做了什么
 
-### 三、音乐平台别名
+### 界面
 
-3.1 本项目内的官方音乐平台别名为本项目内对官方音乐平台的一个称呼，不包含恶意。如果官方音乐平台觉得不妥，可联系本项目更改或移除。
+| 部分 | 说明 |
+|---|---|
+| 左侧导航栏 | 我的列表 / 搜索 / 歌单 / 排行榜 / 设置，常驻显示，点一下直接切 |
+| 我的列表 | 顶部 `◁ 列表名 ▷` 切换列表，点中间弹出全屏列表选择（每行带 ⋮ 菜单） |
+| 歌曲列表 | 紧凑单行：序号 + 歌名 + 歌手，长按弹出原版歌曲菜单 |
+| 播放页 | 封面 / 歌词左右滑动切换，进度条可拖动，歌词支持拖拽调进度 |
 
-### 四、资源使用
+### 尺寸适配（全部按屏幕实时计算，不写死像素）
 
-4.1 本项目内使用的部分包括但不限于字体、图片等资源来源于互联网。如果出现侵权可联系本项目移除。
+所有尺寸都由当前窗口尺寸推导，换到别的表盘也不会溢出：
 
-### 五、免责声明
+```
+主字号    = 短边 × 0.036（10~17sp，再乘用户字号倍率）
+顶栏      = max(高 × 8.5%,  字号 × 2.6)
+播放条    = max(高 × 15%,   字号 × 4.6)
+列表行高  = max(高 × 10.5%, 字号 × 3.6)
+左右留白  = 宽 × 8.5%（避开圆角）
+封面边长  = min(短边 × 42%, 剩余高度 × 60%)
+```
 
-5.1 由于使用本项目产生的包括由于本协议或由于使用或无法使用本项目而引起的任何性质的任何直接、间接、特殊、偶然或结果性损害（包括但不限于因商誉损失、停工、计算机故障或故障引起的损害赔偿，或任何及所有其他商业损害或损失）由使用者负责。
+顶栏 + 播放条 + 一行歌词 ≈ 屏高 34%，任何字号档位都不会溢出。
 
-### 六、使用限制
+### 针对手表做的修改
 
-6.1 本项目完全免费，且开源发布于 GitHub 面向全世界人用作对技术的学习交流。本项目不对项目内的技术可能存在违反当地法律法规的行为作保证。
+- **圆角屏避让**：上下留白可调（设置 → 基础 → 上下留白），左右按屏宽比例留白
+- **系统栏避让**：读 `StatusBar.currentHeight`，第三方 ROM 上不会被状态栏压住
+- **界面形态**：设置 → 基础 → 界面形态，可强制「手机版 / 手表版 / 自动识别」
+- **文字行高**：表盘上显式设置 `lineHeight`，修复中文下半部分被裁的问题
+- **字号档位**：0.9 / 1.0 / 1.2 / 1.4 / 1.65 / 1.9，改完立即生效
+- **音源导入**：设置 → 源 → 「从 Download 目录导入音源」，直接扫目录里的 `.js`
+- **去掉更新检查**：包名和版本号与官方不同，更新检查只会误报，已关闭
 
-6.2 **禁止在违反当地法律法规的情况下使用本项目。** 对于使用者在明知或不知当地法律法规不允许的情况下使用本项目所造成的任何违法违规行为由使用者承担，本项目不承担由此造成的任何直接、间接、特殊、偶然或结果性责任。
+### 保留的原版功能
 
-### 七、版权保护
+歌曲菜单（播放 / 稍后播放 / 添加到 / 移动到 / 调整位置 / 换源 / 分享 / 详情 / 清理缓存 / 不喜欢 / 移除）、
+列表菜单（新建 / 重命名 / 排序 / 重复 / 添加本地 / 更新 / 导入 / 导出 / 移除）、
+歌词字号与对齐、桌面歌词、定时停止播放、播放器设置、评论页，全部沿用原版实现。
 
-7.1 音乐平台不易，请尊重版权，支持正版。
+## 从源码构建
 
-### 八、非商业性质
+```bash
+# 需要 Android SDK、JDK 17、Node.js 18+
+npm install
+cd android
+./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+```
 
-8.1 本项目仅用于对技术可行性的探索及研究，不接受任何商业（包括但不限于广告等）合作及捐赠。
+产物：`android/app/build/outputs/apk/release/*-arm64-v8a.apk`
 
-### 九、接受协议
+> ⚠️ 仓库里的 `android/app/build.gradle` 带有原作者本机的绝对路径配置
+> （`hermesCommand`、`android.aapt2FromMavenOverride`），换机器构建前需要改成自己的路径。
+> 签名相关文件（`*.keystore`、`keystore.properties`）未包含在仓库中，需自行创建。
 
-9.1 若你使用了本项目，即代表你接受本协议。
+更详细的适配过程记录见 [doc/开发记录.md](doc/开发记录.md)。
 
----
+## 致谢与声明
 
-若对此有疑问请 mail to: lyswhut+qq.com (请将 `+` 替换成 `@`)
+- 原项目：[lyswhut/lx-music-mobile](https://github.com/lyswhut/lx-music-mobile)（Apache-2.0）
+- 本项目仅做界面适配，**未修改任何音源逻辑**，音乐数据来自原项目支持的各平台
+- 仅供个人学习使用，请支持正版音乐
