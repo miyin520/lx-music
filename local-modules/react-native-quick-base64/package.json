@@ -1,0 +1,12 @@
+{
+  "name": "react-native-quick-base64",
+  "version": "2.2.3-lxlocal",
+  "description": "Pure-JS build (no native code) for LX Music watch build",
+  "main": "lib/module/index",
+  "module": "lib/module/index",
+  "react-native": "lib/module/index",
+  "sideEffects": false,
+  "peerDependencies": {
+    "react-native": "*"
+  }
+}

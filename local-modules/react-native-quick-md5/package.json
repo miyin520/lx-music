@@ -1,0 +1,11 @@
+{
+  "name": "react-native-quick-md5",
+  "version": "3.0.9-lxlocal",
+  "description": "Pure-JS build (no native code) for LX Music watch build",
+  "main": "lib/commonjs/index",
+  "module": "lib/module/index",
+  "react-native": "lib/module/index",
+  "sideEffects": false,
+  "peerDependencies": { "react-native": "*" },
+  "dependencies": { "spark-md5": "^3.0.2" }
+}
