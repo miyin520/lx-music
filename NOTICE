@@ -1,0 +1,14 @@
+LX 手表版
+Copyright 2026 miyin
+
+本作品是对 LX Music 移动版（https://github.com/lyswhut/lx-music-mobile ，
+Copyright lyswhut）的修改版本，按 Apache License 2.0 分发。
+
+修改内容：
+- 针对智能手表屏幕重新排版界面（新增 src/screens/Watch/ 目录）
+- 调整尺寸计算、字号与行高处理
+- 更新检查改为读取本项目仓库的 Release
+- 增加 armeabi-v7a 构建支持
+
+原始作品及其版权归原作者所有，本修改版本的版权归修改者所有。
+本文件依据 Apache License 2.0 第 4 条 (d) 项的要求，用于说明修改内容。
