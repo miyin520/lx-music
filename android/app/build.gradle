@@ -114,9 +114,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "cn.dsh.lxmusic.watch"
+    namespace "cn.miyin.music.watch"
     defaultConfig {
-        applicationId "cn.dsh.lxmusic.watch"
+        applicationId "cn.miyin.music.watch"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode verCode

@@ -4,7 +4,7 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 包名 | `cn.dsh.lxmusic.watch` |
+| 包名 | `cn.miyin.music.watch` |
 | 应用名 | LX 手表版 |
 | 上游版本 | [lyswhut/lx-music-mobile](https://github.com/lyswhut/lx-music-mobile) v1.9.1 |
 | 适用设备 | 智能手表（屏幕短边约 400 至 540 dp） |
