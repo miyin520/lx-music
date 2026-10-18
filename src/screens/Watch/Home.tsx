@@ -22,6 +22,7 @@ import Leaderboard from '@/screens/Home/Views/Leaderboard'
 import Setting from '@/screens/Home/Views/Setting'
 import WatchList from './List'
 import { makeMetrics } from './metrics'
+import WatchBackground from './WatchBackground'
 
 type TabId = 'mine' | 'search' | 'songlist' | 'top' | 'setting'
 
@@ -59,6 +60,7 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
   }, [tab, componentId])
 
   return (
+    <WatchBackground>
     <View style={[styles.container, railSide === 'right' && styles.containerReverse]}>
       {/* 常驻导航栏 */}
       <View style={[styles.rail, {
@@ -104,6 +106,7 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
         {content}
       </View>
     </View>
+    </WatchBackground>
   )
 })
 
