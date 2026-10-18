@@ -24,6 +24,7 @@ import { useFontSize } from '@/store/common/hook'
 import { createStyle } from '@/utils/tools'
 import LyricView from '@/screens/PlayDetail/Vertical/Lyric'
 import { makeMetrics } from './metrics'
+import WatchBackground from './WatchBackground'
 import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
 import DesktopLyricEnable, { type DesktopLyricEnableType } from '@/components/DesktopLyricEnable'
 import { MUSIC_TOGGLE_MODE_LIST, MUSIC_TOGGLE_MODE } from '@/config/constant'
@@ -168,6 +169,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const handleBack = useCallback(() => { void pop(componentId) }, [componentId])
 
   return (
+    <WatchBackground>
     <View style={[
       styles.container,
       { paddingTop: m.insetTop, paddingBottom: m.insetBottom },
@@ -300,6 +302,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         </TouchableOpacity>
       </View>
     </View>
+    </WatchBackground>
   )
 })
 
