@@ -33,6 +33,15 @@ const Item = ({ inset, label, active }: {
 export default memo(() => {
   const t = useI18n()
   const current = useSettingValue('common.watchScreenInset')
+  // 取最接近的档位作为选中项：历史版本存过 30 这种非档位值，
+  // 直接用 === 会导致一个选项都不勾选（用户反馈"实际生效但设置没显示开启"）
+  const nearest = useMemo(() => {
+    let best = LIST[0].inset as number
+    for (const item of LIST) {
+      if (Math.abs(item.inset - current) < Math.abs(best - current)) best = item.inset
+    }
+    return best
+  }, [current])
   const list = useMemo(() => LIST.map((item) => ({ inset: item.inset, name: t(item.name) })), [t])
 
   return (
@@ -40,7 +49,7 @@ export default memo(() => {
       <View style={styles.list}>
         {
           list.map(({ inset, name }) => (
-            <Item key={inset} inset={inset} label={name} active={current == inset} />
+            <Item key={inset} inset={inset} label={name} active={nearest == inset} />
           ))
         }
       </View>

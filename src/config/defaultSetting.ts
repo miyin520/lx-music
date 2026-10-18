@@ -119,7 +119,8 @@ if (winSize.width && winSize.height) {
     defaultSetting['search.isShowHistorySearch'] = false
     defaultSetting['desktopLyric.enable'] = false
     // 圆角屏上下留白：默认「大」（30dp），用户可在设置里调
-    defaultSetting['common.watchScreenInset'] = 30
+    // 默认值与设置项里的档位保持一致（大 = 36dp），否则设置页一项都不会被勾选
+    defaultSetting['common.watchScreenInset'] = 36
     // 手表上进度条极易误触，默认改成「点哪都进播放页」
     defaultSetting['common.allowProgressBarSeek'] = false
   }
