@@ -516,6 +516,7 @@
   "version_btn_close": "關閉",
   "version_btn_downloading": "正在努力下載中... {current}/{total} ({progress}%)",
   "version_btn_failed": "重試",
+  "version_btn_check": "檢查更新",
   "version_btn_ignore": "忽略",
   "version_btn_ignore_cancel": "取消忽略",
   "version_btn_min": "後台下載",

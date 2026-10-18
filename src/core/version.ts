@@ -47,9 +47,9 @@ export const checkUpdate = async() => {
   } else {
     versionInfo.status = 'idle'
     versionInfo.isUnknown = false
-    if (compareVer(versionInfo.version, versionInfo.newVersion.version) != -1) {
-      versionInfo.isLatest = true
-    }
+    // 必须每次都重新赋值：之前只在"是最新"时置 true，
+    // 一旦旧版本判断为最新，之后即使出现新版本也不会再变成 false
+    versionInfo.isLatest = compareVer(versionInfo.version, versionInfo.newVersion.version) != -1
   }
 
   versionActions.setVersionInfo(versionInfo)

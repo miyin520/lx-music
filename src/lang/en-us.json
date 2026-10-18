@@ -516,6 +516,7 @@
   "version_btn_close": "Close",
   "version_btn_downloading": "I am trying to download... {current}/{total} ({progress}%)",
   "version_btn_failed": "Retry",
+  "version_btn_check": "Check for updates",
   "version_btn_ignore": "Ignore",
   "version_btn_ignore_cancel": "Cancel ignore",
   "version_btn_min": "Background download",

@@ -22,7 +22,8 @@ const tagToVersion = (tag) => String(tag || '').replace(/^v/i, '').split('-')[0]
 const request = async(url, retryNum = 0) => {
   return new Promise((resolve, reject) => {
     httpGet(url, {
-      timeout: 10000,
+      // 手表网络较慢，10 秒容易超时导致「未知」，放宽到 20 秒
+      timeout: 20000,
     }, (err, resp, body) => {
       if (err || resp.statusCode != 200) {
         ++retryNum >= 3

@@ -9,7 +9,7 @@ import { sizeFormate } from '@/utils'
 import { useI18n } from '@/lang'
 import { useVersionDownloadProgressUpdated, useVersionInfo } from '@/store/version/hook'
 import Text from '@/components/common/Text'
-import { showModal } from '@/core/version'
+import { showModal, checkUpdate } from '@/core/version'
 
 const currentVer = process.versions.app
 export default memo(() => {
@@ -75,6 +75,10 @@ export default memo(() => {
           }
         </View>
         <View style={styles.btn}>
+          {/* 手表网络较慢，启动时的自动检查容易超时，这里提供手动检查入口 */}
+          <Button onPress={() => { void checkUpdate() }}>{t('version_btn_check')}</Button>
+        </View>
+        <View style={styles.btn}>
           <Button onPress={handleOpenVersionModal}>{t('setting_version_show_ver_modal')}</Button>
         </View>
       </SubTitle>
@@ -88,5 +92,6 @@ const styles = StyleSheet.create({
   },
   btn: {
     flexDirection: 'row',
+    marginBottom: 6,
   },
 })
