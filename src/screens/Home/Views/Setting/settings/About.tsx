@@ -19,6 +19,10 @@ import { showPactModal } from '@/core/common'
 export default memo(() => {
   const theme = useTheme()
   const t = useI18n()
+  const openWatchRepoPage = () => {
+    void openUrl('https://github.com/miyin520/lx-music')
+  }
+
   const openHomePage = () => {
     void openUrl('https://github.com/lyswhut/lx-music-mobile#readme')
   }
@@ -26,7 +30,7 @@ export default memo(() => {
     void openUrl('https://github.com/lyswhut/lx-music-mobile/issues?q=is%3Aissue+')
   }
   const openGHReleasePage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile/releases')
+    void openUrl('https://github.com/miyin520/lx-music/releases')
   }
   const openFAQPage = () => {
     void openUrl('https://lyswhut.github.io/lx-music-doc/mobile/faq')
@@ -63,7 +67,13 @@ export default memo(() => {
   return (
     <Section title={t('setting_about')}>
       <View style={styles.part}>
-        <Text style={styles.text} >本软件完全免费，代码已开源。开源地址：</Text>
+        <Text style={styles.text} >本项目为 LX Music 移动版的手表适配版本，代码已开源。本项目地址：</Text>
+        <TouchableOpacity onPress={openWatchRepoPage}>
+          <Text style={textLinkStyle}>https://github.com/miyin520/lx-music</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.part}>
+        <Text style={styles.text} >原项目地址（LX Music 移动版）：</Text>
         <TouchableOpacity onPress={openHomePage}>
           <Text style={textLinkStyle}>https://github.com/lyswhut/lx-music-mobile</Text>
         </TouchableOpacity>
@@ -71,7 +81,7 @@ export default memo(() => {
       <View style={styles.part}>
         <Text style={styles.text}>最新版下载地址：</Text>
         <TouchableOpacity onPress={openGHReleasePage}>
-          <Text style={textLinkStyle}>GitHub Releases</Text>
+          <Text style={textLinkStyle}>本项目 Releases</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
@@ -112,7 +122,7 @@ export default memo(() => {
       </View>
       <View style={styles.part}>
         <Text style={styles.text}>By: </Text>
-        <Text style={styles.text}>落雪无痕</Text>
+        <Text style={styles.text}>落雪无痕 / miyin</Text>
       </View>
     </Section>
   )
