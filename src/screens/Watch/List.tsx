@@ -217,7 +217,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
 
         {/* 搜索：点开后顶部变成输入框，再点一次关闭 */}
         <TouchableOpacity
-          style={{ width: m.touch * 0.8, height: m.header, alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: m.header * 0.62, height: m.header, alignItems: 'center', justifyContent: 'center' }}
           activeOpacity={0.6}
           onPress={() => {
             setSearching(v => {
@@ -226,7 +226,12 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
             })
           }}
         >
-          <Icon name={searching ? 'close' : 'search-2'} size={m.iconMd} color={searching ? theme['c-primary'] : theme['c-350']} />
+          <Icon
+            name={searching ? 'close' : 'search-2'}
+            // 取消图标再缩小一档：close 这个字形笔画较粗，缩小后观感更细
+            size={searching ? m.iconSm * 0.85 : m.iconSm}
+            color={searching ? theme['c-primary'] : theme['c-350']}
+          />
         </TouchableOpacity>
 
       </View>
