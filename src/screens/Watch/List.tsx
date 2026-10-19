@@ -8,6 +8,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, FlatList, ScrollView, TouchableOpacity } from 'react-native'
 
 import Text from '@/components/common/Text'
+import Input from '@/components/common/Input'
 import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { useMyList, useActiveListId, useMusicList } from '@/store/list/hook'
@@ -38,6 +39,7 @@ import ListMusicSort, { type ListMusicSortType } from '@/screens/Home/Views/Myli
 import DuplicateMusic, { type DuplicateMusicType } from '@/screens/Home/Views/Mylist/MyList/DuplicateMusic'
 import ListImportExport, { type ListImportExportType } from '@/screens/Home/Views/Mylist/MyList/ListImportExport'
 import { handleRemove as handleListRemove, handleSync as handleListSync } from '@/screens/Home/Views/Mylist/MyList/listAction'
+import { searchListMusic } from '@/screens/Home/Views/Mylist/MusicList/listAction'
 import { makeMetrics, dumpMetrics } from './metrics'
 
 const WatchList = memo(({ componentId }: { componentId: string }) => {
@@ -71,6 +73,19 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   const listImportExportRef = useRef<ListImportExportType>(null)
 
   const [showListPicker, setShowListPicker] = useState(false)
+  // 列表内搜索（与原版一致的匹配规则）
+  const [searching, setSearching] = useState(false)
+  const [keyword, setKeyword] = useState('')
+  const displayList = useMemo(
+    () => keyword ? searchListMusic(musicList as LX.Music.MusicInfo[], keyword) : (musicList as LX.Music.MusicInfo[]),
+    [musicList, keyword],
+  )
+  // 搜索结果的索引与原列表不同，播放/菜单要用真实索引
+  const indexMap = useMemo(() => {
+    const map = new Map<string, number>()
+    ;(musicList as LX.Music.MusicInfo[]).forEach((m, i) => map.set(m.id, i))
+    return map
+  }, [musicList])
 
   // 菜单锚点：放在屏幕中间偏上，菜单从中间展开（贴边在圆角表上点不到）
   const menuAnchor = useMemo(() => ({
@@ -125,7 +140,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   }, [musicList, playerMusicInfo])
 
   const renderRow = useCallback(({ item, index }: { item: LX.Music.MusicInfo, index: number }) => {
-    const active = index === playingIndex
+    const realIndex = indexMap.get(item.id) ?? index
+    const active = item.id === playerMusicInfo.id
     return (
       <TouchableOpacity
         style={[
@@ -134,8 +150,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           active && { backgroundColor: theme['c-primary-background-hover'] },
         ]}
         activeOpacity={0.6}
-        onPress={() => { handlePlay(index) }}
-        onLongPress={() => { openAction(item, index) }}
+        onPress={() => { handlePlay(realIndex) }}
+        onLongPress={() => { openAction(item, realIndex) }}
         delayLongPress={350}
       >
         <View style={{ width: m.fontMd * 1.6, alignItems: 'center' }}>
@@ -167,16 +183,29 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           <Icon name="chevron-left" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={{ flex: 1, height: m.header, alignItems: 'center', justifyContent: 'center' }}
-          activeOpacity={0.6}
-          onPress={() => { setShowListPicker(true) }}
-        >
-          <Text size={m.fontMd} numberOfLines={1} color={theme['c-primary']}>
-            {activeList?.name ?? '列表'}
-          </Text>
-          <Text size={m.fontSm} color={theme['c-500']}>{`${musicList.length} 首`}</Text>
-        </TouchableOpacity>
+        {
+          searching
+            ? <View style={{ flex: 1, height: m.header, justifyContent: 'center', paddingHorizontal: m.side * 0.3 }}>
+                <Input
+                  value={keyword}
+                  onChangeText={setKeyword}
+                  placeholder="搜索歌曲"
+                  clearBtn
+                  style={{ fontSize: m.fontMd }}
+                  autoFocus
+                />
+              </View>
+            : <TouchableOpacity
+                style={{ flex: 1, height: m.header, alignItems: 'center', justifyContent: 'center' }}
+                activeOpacity={0.6}
+                onPress={() => { setShowListPicker(true) }}
+              >
+                <Text size={m.fontMd} numberOfLines={1} color={theme['c-primary']}>
+                  {activeList?.name ?? '列表'}
+                </Text>
+                <Text size={m.fontSm} color={theme['c-500']}>{`${musicList.length} 首`}</Text>
+              </TouchableOpacity>
+        }
 
         <TouchableOpacity
           style={{ width: m.touch * 0.8, height: m.header, alignItems: 'center', justifyContent: 'center' }}
@@ -186,13 +215,27 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           <Icon name="chevron-right" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
 
+        {/* 搜索：点开后顶部变成输入框，再点一次关闭 */}
+        <TouchableOpacity
+          style={{ width: m.touch * 0.8, height: m.header, alignItems: 'center', justifyContent: 'center' }}
+          activeOpacity={0.6}
+          onPress={() => {
+            setSearching(v => {
+              if (v) setKeyword('')
+              return !v
+            })
+          }}
+        >
+          <Icon name={searching ? 'close' : 'search-2'} size={m.iconMd} color={searching ? theme['c-primary'] : theme['c-350']} />
+        </TouchableOpacity>
+
       </View>
 
       {/* 歌曲列表 */}
       <FlatList
         style={styles.list}
         contentContainerStyle={{ paddingHorizontal: m.side * 0.4 }}
-        data={musicList as LX.Music.MusicInfo[]}
+        data={displayList}
         keyExtractor={(item, index) => `${item.id}_${index}`}
         renderItem={renderRow}
         initialNumToRender={10}
