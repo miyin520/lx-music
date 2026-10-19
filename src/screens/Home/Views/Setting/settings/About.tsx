@@ -4,7 +4,7 @@ import { View, TouchableOpacity } from 'react-native'
 import Section from '../components/Section'
 // import Button from './components/Button'
 
-import { createStyle, openUrl } from '@/utils/tools'
+import { createStyle, openUrl, clipboardWriteText } from '@/utils/tools'
 // import { showPactModal } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
@@ -15,6 +15,9 @@ import { showPactModal } from '@/core/common'
 // const qqGroupUrl2 = 'mqqopensdkapi://bizAgent/qm/qr?url=http%3A%2F%2Fqm.qq.com%2Fcgi-bin%2Fqm%2Fqr%3Ffrom%3Dapp%26p%3Dandroid%26jump_from%3Dwebapi%26k%3D-l4kNZ2bPQAuvfCQFFhl1UoibvF5wcrQ'
 // const qqGroupWebUrl = 'https://qm.qq.com/cgi-bin/qm/qr?k=jRZkyFSZ4FmUuTHA3P_RAXbbUO_Rrn5e&jump_from=webapi'
 // const qqGroupWebUrl2 = 'https://qm.qq.com/cgi-bin/qm/qr?k=HPNJEfrZpBZ9T8szYWbe2d5JrAAeOt_l&jump_from=webapi'
+
+/** 交流群号，改号只需改这里 */
+const QQ_GROUP = '439155836'
 
 export default memo(() => {
   const theme = useTheme()
@@ -70,6 +73,12 @@ export default memo(() => {
         <Text style={styles.text} >本项目为 LX Music 移动版的手表适配版本，代码已开源。本项目地址：</Text>
         <TouchableOpacity onPress={openWatchRepoPage}>
           <Text style={textLinkStyle}>https://github.com/miyin520/lx-music</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.part}>
+        <Text style={styles.text}>反馈与交流：QQ 群 {QQ_GROUP}（点击复制群号）</Text>
+        <TouchableOpacity onPress={() => { clipboardWriteText(QQ_GROUP) }}>
+          <Text style={textLinkStyle}>{QQ_GROUP}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>
