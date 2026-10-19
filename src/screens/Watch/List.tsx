@@ -5,7 +5,7 @@
  * 顶部窄条（列表名 + 菜单）/ 中间歌曲列表 / 底部迷你播放条。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { View, FlatList, ScrollView, TouchableOpacity } from 'react-native'
+import { View, FlatList, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
 
 import Text from '@/components/common/Text'
 import Input from '@/components/common/Input'
@@ -80,6 +80,51 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     () => keyword ? searchListMusic(musicList as LX.Music.MusicInfo[], keyword) : (musicList as LX.Music.MusicInfo[]),
     [musicList, keyword],
   )
+  // ── 可拖动的滚动指示条 ──
+  // 收藏几千首时，系统自带指示条在手表上又细又不能拖，只能靠手指猛划。
+  const listRef = useRef<FlatList<LX.Music.MusicInfo> | null>(null)
+  const scrollInfo = useRef({ offset: 0, contentH: 0, viewH: 0 })
+  const [bar, setBar] = useState({ top: 0, height: 0, visible: false })
+  const barState = useRef(bar)
+  barState.current = bar
+  const dragStart = useRef({ top: 0, dy: 0 })
+
+  const updateBar = useCallback((offset: number, contentH: number, viewH: number) => {
+    if (contentH <= viewH + 1 || viewH <= 0) {
+      setBar(prev => prev.visible ? { top: 0, height: 0, visible: false } : prev)
+      return
+    }
+    const thumbH = Math.max(viewH * (viewH / contentH), m.barMin)
+    const maxOffset = contentH - viewH
+    const ratio = Math.min(Math.max(offset / maxOffset, 0), 1)
+    setBar({ top: ratio * (viewH - thumbH), height: thumbH, visible: true })
+  }, [m.barMin])
+
+  const scrollToRatio = useCallback((ratio: number) => {
+    const { contentH, viewH } = scrollInfo.current
+    const maxOffset = Math.max(contentH - viewH, 0)
+    const offset = Math.min(Math.max(ratio, 0), 1) * maxOffset
+    scrollInfo.current.offset = offset
+    listRef.current?.scrollToOffset({ offset, animated: false })
+  }, [])
+
+  const pan = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: () => {
+      dragStart.current = { top: barState.current.top, dy: 0 }
+    },
+    onPanResponderMove: (_evt, gesture) => {
+      const { viewH } = scrollInfo.current
+      const trackH = viewH - barState.current.height
+      if (trackH <= 0) return
+      const top = Math.min(Math.max(dragStart.current.top + gesture.dy, 0), trackH)
+      setBar(prev => ({ ...prev, top }))
+      scrollToRatio(top / trackH)
+    },
+  }), [scrollToRatio])
+
   // 搜索结果的索引与原列表不同，播放/菜单要用真实索引
   const indexMap = useMemo(() => {
     const map = new Map<string, number>()
@@ -239,21 +284,69 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       </View>
 
       {/* 歌曲列表 */}
-      <FlatList
-        style={styles.list}
-        contentContainerStyle={{ paddingHorizontal: m.side * 0.4 }}
-        data={displayList}
-        keyExtractor={(item, index) => `${item.id}_${index}`}
-        renderItem={renderRow}
-        initialNumToRender={10}
-        windowSize={7}
-        removeClippedSubviews
-        ListEmptyComponent={
-          <View style={{ paddingTop: m.height * 0.06, alignItems: 'center' }}>
-            <Text size={m.fontSm} color={theme['c-500']}>空列表</Text>
-          </View>
-        }
-      />
+      <View
+        style={{ flex: 1 }}
+        onLayout={e => {
+          const { height } = e.nativeEvent.layout
+          scrollInfo.current.viewH = height
+          updateBar(scrollInfo.current.offset, scrollInfo.current.contentH, height)
+        }}
+      >
+        <FlatList
+          ref={listRef}
+          style={styles.list}
+          contentContainerStyle={{ paddingHorizontal: m.side * 0.4 }}
+          data={displayList}
+          keyExtractor={(item, index) => `${item.id}_${index}`}
+          renderItem={renderRow}
+          // 行高固定，给出布局信息后几千首时滚动与定位都快得多
+          getItemLayout={(_data, index) => ({ length: m.row, offset: m.row * index, index })}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={5}
+          removeClippedSubviews
+          scrollEventThrottle={16}
+          onScroll={e => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
+            scrollInfo.current.offset = contentOffset.y
+            scrollInfo.current.contentH = contentSize.height
+            scrollInfo.current.viewH = layoutMeasurement.height
+            updateBar(contentOffset.y, contentSize.height, layoutMeasurement.height)
+          }}
+          ListEmptyComponent={
+            <View style={{ paddingTop: m.height * 0.06, alignItems: 'center' }}>
+              <Text size={m.fontSm} color={theme['c-500']}>{keyword ? '没有匹配的歌曲' : '空列表'}</Text>
+            </View>
+          }
+        />
+        {/* 滚动指示条：可按住拖动，宽度放大方便点按 */}
+        {bar.visible
+          ? <View
+              pointerEvents="box-none"
+              style={{
+                position: 'absolute',
+                right: m.side * 0.15,
+                top: 0,
+                bottom: 0,
+                width: m.barTouchW,
+                alignItems: 'center',
+              }}
+            >
+              <View
+                {...pan.panHandlers}
+                style={{
+                  position: 'absolute',
+                  top: bar.top,
+                  width: m.barW,
+                  height: bar.height,
+                  borderRadius: m.barW / 2,
+                  backgroundColor: theme['c-350'],
+                  opacity: 0.85,
+                }}
+              />
+            </View>
+          : null}
+      </View>
 
       {/* 列表选择层：全屏、不加深色遮罩；每行右侧 ⋮ 打开该列表的菜单 */}
       {
