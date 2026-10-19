@@ -5,14 +5,14 @@
  * 顶部窄条（列表名 + 菜单）/ 中间歌曲列表 / 底部迷你播放条。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { View, FlatList, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
+import { View, Animated, FlatList, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
 
 import Text from '@/components/common/Text'
 import Input from '@/components/common/Input'
 import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { useMyList, useActiveListId, useMusicList } from '@/store/list/hook'
-import { usePlayerMusicInfo, useIsPlay, useProgress } from '@/store/player/hook'
+import { usePlayerMusicInfo, useIsPlay } from '@/store/player/hook'
 import { useWindowSize } from '@/utils/hooks'
 import { useSettingValue } from '@/store/setting/hook'
 import { useFontSize } from '@/store/common/hook'
@@ -40,6 +40,7 @@ import DuplicateMusic, { type DuplicateMusicType } from '@/screens/Home/Views/My
 import ListImportExport, { type ListImportExportType } from '@/screens/Home/Views/Mylist/MyList/ListImportExport'
 import { handleRemove as handleListRemove, handleSync as handleListSync } from '@/screens/Home/Views/Mylist/MyList/listAction'
 import { searchListMusic } from '@/screens/Home/Views/Mylist/MusicList/listAction'
+import PlayerBar from './PlayerBar'
 import { makeMetrics, dumpMetrics } from './metrics'
 
 const WatchList = memo(({ componentId }: { componentId: string }) => {
@@ -55,7 +56,6 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   const musicList = useMusicList()
   const playerMusicInfo = usePlayerMusicInfo()
   const isPlay = useIsPlay()
-  const { nowPlayTimeStr, progress } = useProgress(true)
 
   // 把真实尺寸写出来，方便核对布局（不影响功能）
   useEffect(() => { void dumpMetrics(m) }, [m])
@@ -82,23 +82,27 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   )
   // ── 可拖动的滚动指示条 ──
   // 收藏几千首时，系统自带指示条在手表上又细又不能拖，只能靠手指猛划。
+  // 位置用 Animated.Value 直接写到原生层：滚动时不再每帧 setState，
+  // 否则整个列表（含 FlatList）每帧重渲染，滑起来会明显卡顿。
   const listRef = useRef<FlatList<LX.Music.MusicInfo> | null>(null)
   const scrollInfo = useRef({ offset: 0, contentH: 0, viewH: 0 })
-  const [bar, setBar] = useState({ top: 0, height: 0, visible: false })
-  const barState = useRef(bar)
-  barState.current = bar
-  const dragStart = useRef({ top: 0, dy: 0 })
+  const barTop = useRef(new Animated.Value(0)).current
+  const barGeo = useRef({ height: 0, trackH: 0, top: 0 })
+  const [barUi, setBarUi] = useState({ height: 0, visible: false })
+  const dragStart = useRef(0)
 
-  const updateBar = useCallback((offset: number, contentH: number, viewH: number) => {
+  const syncBar = useCallback((offset: number, contentH: number, viewH: number) => {
     if (contentH <= viewH + 1 || viewH <= 0) {
-      setBar(prev => prev.visible ? { top: 0, height: 0, visible: false } : prev)
+      if (barUi.visible) setBarUi({ height: 0, visible: false })
       return
     }
-    const thumbH = Math.max(viewH * (viewH / contentH), m.barMin)
-    const maxOffset = contentH - viewH
-    const ratio = Math.min(Math.max(offset / maxOffset, 0), 1)
-    setBar({ top: ratio * (viewH - thumbH), height: thumbH, visible: true })
-  }, [m.barMin])
+    const height = Math.max(viewH * (viewH / contentH), m.barMin)
+    const trackH = viewH - height
+    const ratio = Math.min(Math.max(offset / Math.max(contentH - viewH, 1), 0), 1)
+    barGeo.current = { height, trackH, top: ratio * trackH }
+    barTop.setValue(ratio * trackH)
+    if (Math.abs(barUi.height - height) > 0.5 || !barUi.visible) setBarUi({ height, visible: true })
+  }, [barUi.height, barUi.visible, barTop, m.barMin])
 
   const scrollToRatio = useCallback((ratio: number) => {
     const { contentH, viewH } = scrollInfo.current
@@ -112,18 +116,16 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => {
-      dragStart.current = { top: barState.current.top, dy: 0 }
-    },
+    onPanResponderGrant: () => { dragStart.current = barGeo.current.top },
     onPanResponderMove: (_evt, gesture) => {
-      const { viewH } = scrollInfo.current
-      const trackH = viewH - barState.current.height
+      const { trackH } = barGeo.current
       if (trackH <= 0) return
-      const top = Math.min(Math.max(dragStart.current.top + gesture.dy, 0), trackH)
-      setBar(prev => ({ ...prev, top }))
+      const top = Math.min(Math.max(dragStart.current + gesture.dy, 0), trackH)
+      barGeo.current.top = top
+      barTop.setValue(top)
       scrollToRatio(top / trackH)
     },
-  }), [scrollToRatio])
+  }), [barTop, scrollToRatio])
 
   // 搜索结果的索引与原列表不同，播放/菜单要用真实索引
   const indexMap = useMemo(() => {
@@ -289,7 +291,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
         onLayout={e => {
           const { height } = e.nativeEvent.layout
           scrollInfo.current.viewH = height
-          updateBar(scrollInfo.current.offset, scrollInfo.current.contentH, height)
+          syncBar(scrollInfo.current.offset, scrollInfo.current.contentH, height)
         }}
       >
         <FlatList
@@ -305,13 +307,14 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           maxToRenderPerBatch={12}
           windowSize={5}
           removeClippedSubviews
+          showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           onScroll={e => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
             scrollInfo.current.offset = contentOffset.y
             scrollInfo.current.contentH = contentSize.height
             scrollInfo.current.viewH = layoutMeasurement.height
-            updateBar(contentOffset.y, contentSize.height, layoutMeasurement.height)
+            syncBar(contentOffset.y, contentSize.height, layoutMeasurement.height)
           }}
           ListEmptyComponent={
             <View style={{ paddingTop: m.height * 0.06, alignItems: 'center' }}>
@@ -319,29 +322,30 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
             </View>
           }
         />
-        {/* 滚动指示条：可按住拖动，宽度放大方便点按 */}
-        {bar.visible
+        {/* 滚动指示条：可按住拖动；系统自带的那根已关闭，避免出现两条 */}
+        {barUi.visible
           ? <View
               pointerEvents="box-none"
               style={{
                 position: 'absolute',
-                right: m.side * 0.15,
+                right: m.side * 0.1,
                 top: 0,
                 bottom: 0,
                 width: m.barTouchW,
                 alignItems: 'center',
               }}
             >
-              <View
+              <Animated.View
                 {...pan.panHandlers}
                 style={{
                   position: 'absolute',
-                  top: bar.top,
+                  top: 0,
+                  transform: [{ translateY: barTop }],
                   width: m.barW,
-                  height: bar.height,
+                  height: barUi.height,
                   borderRadius: m.barW / 2,
                   backgroundColor: theme['c-350'],
-                  opacity: 0.85,
+                  opacity: 0.9,
                 }}
               />
             </View>
@@ -440,29 +444,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       <DuplicateMusic ref={duplicateMusicRef} />
       <ListImportExport ref={listImportExportRef} />
 
-      {/* 迷你播放条 */}
-      <TouchableOpacity
-        style={[styles.player, { height: m.player, paddingHorizontal: m.side * 0.8 }]}
-        activeOpacity={0.7}
-        onPress={openDetail}
-      >
-        <View style={styles.playerInfo}>
-          <Text size={m.fontSm} numberOfLines={1}>{playerMusicInfo?.name || '未在播放'}</Text>
-          <View style={[styles.playerBar, { marginTop: m.fontSm * 0.35 }]}>
-            <View style={[styles.playerBarFill, { width: `${Math.min(Math.max(progress * 100, 0), 100)}%`, backgroundColor: theme['c-primary'] }]} />
-          </View>
-        </View>
-        <Text size={m.fontSm} color={theme['c-500']} style={{ marginLeft: m.side * 0.5 }}>{nowPlayTimeStr}</Text>
-        <TouchableOpacity style={{ width: m.playBtn, height: m.playBtn, alignItems: 'center', justifyContent: 'center' }} onPress={() => { void playPrev() }} activeOpacity={0.5}>
-          <Icon name="prevMusic" size={m.playIcon} color={theme['c-button-font']} />
-        </TouchableOpacity>
-        <TouchableOpacity style={{ width: m.playBtn, height: m.playBtn, alignItems: 'center', justifyContent: 'center' }} onPress={togglePlay} activeOpacity={0.5}>
-          <Icon name={isPlay ? 'pause' : 'play'} size={m.playIcon * 1.15} color={theme['c-button-font']} />
-        </TouchableOpacity>
-        <TouchableOpacity style={{ width: m.playBtn, height: m.playBtn, alignItems: 'center', justifyContent: 'center' }} onPress={() => { void playNext() }} activeOpacity={0.5}>
-          <Icon name="nextMusic" size={m.playIcon} color={theme['c-button-font']} />
-        </TouchableOpacity>
-      </TouchableOpacity>
+      {/* 迷你播放条：独立组件，避免播放进度每秒刷新整个列表 */}
+      <PlayerBar m={m} onPressDetail={openDetail} />
     </View>
   )
 })

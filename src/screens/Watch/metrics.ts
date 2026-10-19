@@ -92,7 +92,7 @@ export const makeMetrics = (width: number, height: number, userInset = 0): Watch
     // 行内含两行文字（歌名+歌手），按实际行高预留
     row: Math.max(h * 0.105, t15 * 3.6),
     // 指示条：比系统默认粗一倍左右，触摸区再放宽
-    barW: Math.max(Math.round(w * 0.018), 7),
+    barW: Math.max(Math.round(w * 0.036), 14),
     barTouchW: Math.max(Math.round(w * 0.07), 26),
     barMin: Math.max(Math.round(h * 0.06), 30),
     // 左右安全边距：圆角屏四角是 45° 斜切，留白需 ≥ 切角长度的一半。
