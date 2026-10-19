@@ -135,13 +135,15 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   }, [componentId])
 
   const playingIndex = useMemo(() => {
-    if (!playerMusicInfo.id) return -1
+    // playerState.musicInfo 初始为 null（首次启动/长时间后台后恢复前）。
+    // 之前直接取 .id 会抛 TypeError 导致闪退。
+    if (!playerMusicInfo?.id) return -1
     return musicList.findIndex(x => x.id === playerMusicInfo.id)
   }, [musicList, playerMusicInfo])
 
   const renderRow = useCallback(({ item, index }: { item: LX.Music.MusicInfo, index: number }) => {
     const realIndex = indexMap.get(item.id) ?? index
-    const active = item.id === playerMusicInfo.id
+    const active = !!playerMusicInfo?.id && item.id === playerMusicInfo.id
     return (
       <TouchableOpacity
         style={[
@@ -352,7 +354,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
         onPress={openDetail}
       >
         <View style={styles.playerInfo}>
-          <Text size={m.fontSm} numberOfLines={1}>{playerMusicInfo.name || '未在播放'}</Text>
+          <Text size={m.fontSm} numberOfLines={1}>{playerMusicInfo?.name || '未在播放'}</Text>
           <View style={[styles.playerBar, { marginTop: m.fontSm * 0.35 }]}>
             <View style={[styles.playerBarFill, { width: `${Math.min(Math.max(progress * 100, 0), 100)}%`, backgroundColor: theme['c-primary'] }]} />
           </View>

@@ -184,8 +184,8 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
           <Icon name="chevron-left" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text size={m.fontMd} numberOfLines={1}>{musicInfo.name || '未在播放'}</Text>
-          <Text size={m.fontSm} color={theme['c-500']} numberOfLines={1}>{musicInfo.singer ?? ''}</Text>
+          <Text size={m.fontMd} numberOfLines={1}>{musicInfo?.name || '未在播放'}</Text>
+          <Text size={m.fontSm} color={theme['c-500']} numberOfLines={1}>{musicInfo?.singer ?? ''}</Text>
         </View>
         {/* 爱心：加入播放列表 */}
         <TouchableOpacity
@@ -233,15 +233,15 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         {/* 第 1 页：封面（内容整体缩小，避免上下被圆角/页脚遮挡） */}
         <View key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]}>
           <Image
-            url={musicInfo.pic}
+            url={musicInfo?.pic}
             style={{
               width: m.cover,
               height: m.cover,
               borderRadius: m.cover * 0.1,
             }}
           />
-          <Text size={m.fontSm} numberOfLines={1} style={{ marginTop: m.fontSm * 0.6 }}>{musicInfo.name || '未在播放'}</Text>
-          <Text size={m.fontSm} numberOfLines={1} color={theme['c-500']} style={{ marginTop: m.fontSm * 0.15 }}>{musicInfo.singer ?? ''}</Text>
+          <Text size={m.fontSm} numberOfLines={1} style={{ marginTop: m.fontSm * 0.6 }}>{musicInfo?.name || '未在播放'}</Text>
+          <Text size={m.fontSm} numberOfLines={1} color={theme['c-500']} style={{ marginTop: m.fontSm * 0.15 }}>{musicInfo?.singer ?? ''}</Text>
         </View>
 
         {/* 第 2 页：歌词 —— 直接用原版实现，
