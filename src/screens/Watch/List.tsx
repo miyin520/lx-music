@@ -41,7 +41,51 @@ import ListImportExport, { type ListImportExportType } from '@/screens/Home/View
 import { handleRemove as handleListRemove, handleSync as handleListSync } from '@/screens/Home/Views/Mylist/MyList/listAction'
 import { searchListMusic } from '@/screens/Home/Views/Mylist/MusicList/listAction'
 import PlayerBar from './PlayerBar'
-import { makeMetrics, dumpMetrics } from './metrics'
+import { makeMetrics, dumpMetrics, type WatchMetrics } from './metrics'
+
+interface SongRowProps {
+  item: LX.Music.MusicInfo
+  index: number
+  realIndex: number
+  active: boolean
+  isPlay: boolean
+  theme: ReturnType<typeof useTheme>
+  m: WatchMetrics
+  onPlay: (index: number) => void
+  onMenu: (item: LX.Music.MusicInfo, index: number) => void
+}
+
+/**
+ * 单行歌曲
+ * memo 化：父组件因播放进度、主题等变化重渲染时，未变化的行直接跳过。
+ */
+const SongRow = memo(({ item, index, realIndex, active, isPlay, theme, m, onPlay, onMenu }: SongRowProps) => {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.row,
+        { height: m.row, paddingHorizontal: m.side * 0.5 },
+        active && { backgroundColor: theme['c-primary-background-hover'] },
+      ]}
+      activeOpacity={0.6}
+      onPress={() => { onPlay(realIndex) }}
+      onLongPress={() => { onMenu(item, realIndex) }}
+      delayLongPress={350}
+    >
+      <View style={{ width: m.fontMd * 1.6, alignItems: 'center' }}>
+        {
+          active
+            ? <Icon name={isPlay ? 'pause' : 'play-outline'} size={m.iconSm} color={theme['c-primary']} />
+            : <Text size={m.fontSm} color={theme['c-350']}>{index + 1}</Text>
+        }
+      </View>
+      <View style={styles.rowText}>
+        <Text size={m.fontMd} color={active ? theme['c-primary'] : theme['c-font']} numberOfLines={1}>{item.name}</Text>
+        <Text size={m.fontSm} color={theme['c-500']} numberOfLines={1}>{item.singer}</Text>
+      </View>
+    </TouchableOpacity>
+  )
+})
 
 const WatchList = memo(({ componentId }: { componentId: string }) => {
   const theme = useTheme()
@@ -188,35 +232,23 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     return musicList.findIndex(x => x.id === playerMusicInfo.id)
   }, [musicList, playerMusicInfo])
 
-  const renderRow = useCallback(({ item, index }: { item: LX.Music.MusicInfo, index: number }) => {
-    const realIndex = indexMap.get(item.id) ?? index
-    const active = !!playerMusicInfo?.id && item.id === playerMusicInfo.id
+  // 行组件独立出来并 memo：几千首时扁平列表只渲染可见的十几行，
+  // 但父组件（进度、主题、播放状态）变化会触发整表重建，memo 能挡掉这部分开销。
+  const renderItem = useCallback(({ item, index }: { item: LX.Music.MusicInfo, index: number }) => {
     return (
-      <TouchableOpacity
-        style={[
-          styles.row,
-          { height: m.row, paddingHorizontal: m.side * 0.5 },
-          active && { backgroundColor: theme['c-primary-background-hover'] },
-        ]}
-        activeOpacity={0.6}
-        onPress={() => { handlePlay(realIndex) }}
-        onLongPress={() => { openAction(item, realIndex) }}
-        delayLongPress={350}
-      >
-        <View style={{ width: m.fontMd * 1.6, alignItems: 'center' }}>
-          {
-            active
-              ? <Icon name={isPlay ? 'pause' : 'play-outline'} size={m.iconSm} color={theme['c-primary']} />
-              : <Text size={m.fontSm} color={theme['c-350']}>{index + 1}</Text>
-          }
-        </View>
-        <View style={styles.rowText}>
-          <Text size={m.fontMd} color={active ? theme['c-primary'] : theme['c-font']} numberOfLines={1}>{item.name}</Text>
-          <Text size={m.fontSm} color={theme['c-500']} numberOfLines={1}>{item.singer}</Text>
-        </View>
-      </TouchableOpacity>
+      <SongRow
+        item={item}
+        index={index}
+        realIndex={indexMap.get(item.id) ?? index}
+        active={!!playerMusicInfo?.id && item.id === playerMusicInfo.id}
+        isPlay={isPlay}
+        theme={theme}
+        m={m}
+        onPlay={handlePlay}
+        onMenu={openAction}
+      />
     )
-  }, [playingIndex, isPlay, theme, handlePlay, m])
+  }, [indexMap, playerMusicInfo, isPlay, theme, m, handlePlay, openAction])
 
   return (
     // 注意：本组件渲染在 Watch/Home 的内容区里，
@@ -300,12 +332,14 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           contentContainerStyle={{ paddingHorizontal: m.side * 0.4 }}
           data={displayList}
           keyExtractor={(item, index) => `${item.id}_${index}`}
-          renderItem={renderRow}
+          renderItem={renderItem}
           // 行高固定，给出布局信息后几千首时滚动与定位都快得多
           getItemLayout={(_data, index) => ({ length: m.row, offset: m.row * index, index })}
-          initialNumToRender={12}
-          maxToRenderPerBatch={12}
-          windowSize={5}
+          // 3800 首时初次渲染量必须压住，否则首屏会一次性创建大量视图导致卡死
+          initialNumToRender={8}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={60}
+          windowSize={3}
           removeClippedSubviews
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
