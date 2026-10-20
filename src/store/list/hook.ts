@@ -4,15 +4,16 @@ import { getListMusics } from '@/core/list'
 
 export const useMyList = () => {
   const [lists, setList] = useState(state.allList)
-  lists[0].name = global.i18n.t('list_name_default')
-  lists[1].name = global.i18n.t('list_name_love')
+  // 防御：列表数据未就绪时 allList 可能为空数组，直接取下标会抛异常
+  if (lists[0]) lists[0].name = global.i18n.t('list_name_default')
+  if (lists[1]) lists[1].name = global.i18n.t('list_name_love')
 
   useEffect(() => {
     const handleConfigUpdate = (keys: Array<keyof LX.AppSetting>) => {
       if (!keys.includes('common.langId')) return
       setList((lists) => {
-        lists[0].name = global.i18n.t('list_name_default')
-        lists[1].name = global.i18n.t('list_name_love')
+        if (lists[0]) lists[0].name = global.i18n.t('list_name_default')
+        if (lists[1]) lists[1].name = global.i18n.t('list_name_love')
         return [...lists]
       })
     }
@@ -48,12 +49,15 @@ export const useMusicList = () => {
     let disposed = false
     let retryTimer: ReturnType<typeof setTimeout> | null = null
     let retryCount = 0
+    // 请求序号：快速切换列表时，旧请求可能后返回并把新列表覆盖成旧数据
+    let requestId = 0
 
     const load = (listId?: string) => {
       // 兜底：activeListId 为空串时按「我的列表」读取，避免永远拿到空数组
       const id = listId || state.activeListId || 'default'
+      const current = ++requestId
       void getListMusics(id).then((musics) => {
-        if (disposed) return
+        if (disposed || current != requestId) return
         setList([...musics])
         // 首次启动时数据库/列表可能尚未加载完成，此时会拿到空数组。
         // 以前只有「切换列表」才会重新读取，于是列表一直空着；

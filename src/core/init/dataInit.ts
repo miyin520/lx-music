@@ -1,5 +1,5 @@
 // import { getPlayInfo } from '@/utils/data'
-// import { log } from '@/utils/log'
+import { log } from '@/utils/log'
 import { init as musicSdkInit } from '@/utils/musicSdk'
 import { getUserLists, setUserList, setActiveList } from '@/core/list'
 import { LIST_IDS } from '@/config/constant'
@@ -34,8 +34,14 @@ export default async(appSetting: LX.AppSetting) => {
   // 恢复上次选中的列表；没有记录或记录的是临时列表时回到「我的列表」。
   // 之前表盘界面从不初始化它，activeListId 一直是空串，
   // getListMusics('') 只会返回空数组，于是进入列表后一直显示 0 首。
-  const prevListId = await getListPrevSelectId()
-  setActiveList(prevListId && prevListId != LIST_IDS.TEMP ? prevListId : LIST_IDS.DEFAULT)
+  try {
+    const prevListId = await getListPrevSelectId()
+    setActiveList(prevListId && prevListId != LIST_IDS.TEMP ? prevListId : LIST_IDS.DEFAULT)
+  } catch (err) {
+    // 读取上次列表失败时退回「我的列表」，不能因此让整个启动流程抛出
+    log.error(err as Error)
+    setActiveList(LIST_IDS.DEFAULT)
+  }
   setDislikeInfo(await getDislikeInfo()) // 获取不喜欢列表
   bootLog('User list inited.')
   setNavActiveId((await getViewPrevState()).id)
