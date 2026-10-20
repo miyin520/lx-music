@@ -50,7 +50,9 @@ export const useMusicList = () => {
     let retryCount = 0
 
     const load = (listId?: string) => {
-      void getListMusics(listId ?? state.activeListId).then((musics) => {
+      // 兜底：activeListId 为空串时按「我的列表」读取，避免永远拿到空数组
+      const id = listId || state.activeListId || 'default'
+      void getListMusics(id).then((musics) => {
         if (disposed) return
         setList([...musics])
         // 首次启动时数据库/列表可能尚未加载完成，此时会拿到空数组。
