@@ -127,16 +127,18 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   // ── 分页挂载 ──
   // 几千首时一次性全部交给 FlatList，首屏会创建大量行视图并占用较多原生内存，
   // 在手表上容易直接被系统杀掉（闪退）。这里只挂载已加载的部分，滑到底再追加。
-  const PAGE_SIZE = 200
-  const [loadedCount, setLoadedCount] = useState(PAGE_SIZE)
+  const WINDOW_SIZE = 400
+  const [listWin, setListWin] = useState({ start: 0, end: WINDOW_SIZE })
   const totalCount = displayList.length
+  // 只把「窗口内」的歌曲交给列表：几千首时内存与渲染压力都能压住，
+  // 拖动滚动条跳远时会直接换一个窗口，而不是把中间几千行都加载出来。
   const pageData = useMemo(
-    () => loadedCount >= displayList.length ? displayList : displayList.slice(0, loadedCount),
-    [displayList, loadedCount],
+    () => displayList.slice(listWin.start, Math.min(listWin.end, displayList.length)),
+    [displayList, listWin.start, listWin.end],
   )
-  // 滚动条按「全部歌曲」的高度计算，这样即使只加载了一部分，比例也是准的
+  // 滚动条按「全部歌曲」的高度计算，这样即使只挂载了一段，比例也是准的
   const totalHeight = totalCount * m.row
-  const pendingOffset = useRef<number | null>(null)
+  const pendingIndex = useRef<number | null>(null)
 
   // ── 可拖动的滚动指示条 ──
   // 收藏几千首时，系统自带指示条在手表上又细又不能拖，只能靠手指猛划。
@@ -150,8 +152,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   const dragStart = useRef(0)
   const lastSyncedTop = useRef(0)
 
-  const syncBar = useCallback((offset: number, contentH: number, viewH: number) => {
-    if (contentH <= viewH + 1 || viewH <= 0) {
+  const syncBar = useCallback((windowOffset: number, contentH: number, viewH: number) => {
+    if (totalHeight <= viewH + 1 || viewH <= 0) {
       if (barUi.visible) setBarUi({ height: 0, visible: false })
       return
     }
@@ -159,7 +161,9 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     const trackH = viewH - height
     // 比例按「全部歌曲」的高度算：即使只挂载了一部分，滑块位置也准确
     const full = Math.max(totalHeight, contentH)
-    const ratio = Math.min(Math.max(offset / Math.max(full - viewH, 1), 0), 1)
+    // windowOffset 是当前窗口内的偏移，加上窗口起点才是歌曲在总歌单里的位置
+    const globalOffset = listWin.start * m.row + windowOffset
+    const ratio = Math.min(Math.max(globalOffset / Math.max(full - viewH, 1), 0), 1)
     barGeo.current = { height, trackH, top: ratio * trackH }
     // 位移小于 1.5dp 不更新：滚动条只是指示用途，减少跨桥调用是主要性能手段
     if (Math.abs(barGeo.current.top - lastSyncedTop.current) > 1.5) {
@@ -167,49 +171,66 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       barTop.setValue(barGeo.current.top)
     }
     if (Math.abs(barUi.height - height) > 0.5 || !barUi.visible) setBarUi({ height, visible: true })
-  }, [barUi.height, barUi.visible, barTop, m.barMin, totalHeight])
+  }, [barUi.height, barUi.visible, barTop, m.barMin, totalHeight, listWin.start, m.row])
 
-  const scrollToRatio = useCallback((ratio: number) => {
-    const { viewH } = scrollInfo.current
-    const maxOffset = Math.max(totalHeight - viewH, 0)
-    const offset = Math.min(Math.max(ratio, 0), 1) * maxOffset
-    const targetIndex = Math.floor(offset / m.row)
-    scrollInfo.current.offset = offset
-    // 目标位置还没加载：先扩容，等渲染完再跳转
-    if (targetIndex + PAGE_SIZE > loadedCount && loadedCount < totalCount) {
-      pendingOffset.current = offset
-      setLoadedCount(Math.min(totalCount, targetIndex + PAGE_SIZE))
+  const jumpToIndex = useCallback((index: number) => {
+    const target = Math.min(Math.max(index, 0), Math.max(totalCount - 1, 0))
+    // 目标在当前窗口内：直接滚过去
+    if (target >= listWin.start && target < listWin.end) {
+      listRef.current?.scrollToOffset({ offset: (target - listWin.start) * m.row, animated: false })
       return
     }
-    listRef.current?.scrollToOffset({ offset, animated: false })
-  }, [totalHeight, m.row, loadedCount, totalCount])
+    // 不在窗口内：换一个以目标为中心的窗口，渲染后再定位
+    const start = Math.max(0, target - Math.floor(WINDOW_SIZE / 4))
+    pendingIndex.current = target
+    setListWin({ start, end: Math.min(totalCount, start + WINDOW_SIZE) })
+  }, [listWin.start, listWin.end, totalCount, m.row])
 
-  // 扩容完成后再执行暂存的跳转
+  // 换窗口后执行定位
   useEffect(() => {
-    if (pendingOffset.current == null) return
-    const offset = pendingOffset.current
-    pendingOffset.current = null
+    if (pendingIndex.current == null) return
+    const target = pendingIndex.current
+    pendingIndex.current = null
     requestAnimationFrame(() => {
-      listRef.current?.scrollToOffset({ offset, animated: false })
+      listRef.current?.scrollToOffset({ offset: Math.max(target - listWin.start, 0) * m.row, animated: false })
     })
-  }, [loadedCount])
+  }, [listWin.start, listWin.end, m.row])
+
+  // 拖动过程中只移动滑块并显示「第 N 首」提示，不滚动列表。
+  // 之前每移动一像素就 scrollToOffset 一次，等于每一帧都在重排列表，手表上必然卡。
+  const [dragTip, setDragTip] = useState<number | null>(null)
+  const lastTipIndex = useRef(-1)
 
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => { dragStart.current = barGeo.current.top },
+    onPanResponderGrant: () => {
+      dragStart.current = barGeo.current.top
+      lastTipIndex.current = -1
+      setDragTip(Math.floor((barGeo.current.top / Math.max(barGeo.current.trackH, 1)) * totalCount))
+    },
     onPanResponderMove: (_evt, gesture) => {
       const { trackH } = barGeo.current
       if (trackH <= 0) return
       const top = Math.min(Math.max(dragStart.current + gesture.dy, 0), trackH)
       barGeo.current.top = top
       barTop.setValue(top)
-      scrollToRatio(top / trackH)
+      const index = Math.floor((top / trackH) * totalCount)
+      if (index != lastTipIndex.current) {
+        lastTipIndex.current = index
+        setDragTip(index)
+      }
     },
-  }), [barTop, scrollToRatio])
+    onPanResponderRelease: () => {
+      const { trackH } = barGeo.current
+      setDragTip(null)
+      if (trackH > 0 && totalCount) jumpToIndex(Math.floor((barGeo.current.top / trackH) * totalCount))
+    },
+    onPanResponderTerminate: () => { setDragTip(null) },
+  }), [barTop, jumpToIndex, totalCount])
 
-  useEffect(() => { setLoadedCount(PAGE_SIZE) }, [activeListId, keyword])
+  useEffect(() => { setListWin({ start: 0, end: WINDOW_SIZE }) }, [activeListId, keyword])
 
   // 搜索结果的索引与原列表不同，播放/菜单要用真实索引
   const indexMap = useMemo(() => {
@@ -384,7 +405,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           showsVerticalScrollIndicator={false}
           onEndReachedThreshold={0.8}
           onEndReached={() => {
-            if (loadedCount < totalCount) setLoadedCount(Math.min(totalCount, loadedCount + PAGE_SIZE))
+            // 快到底时把窗口往后挪一屏，保持内存占用稳定
+            if (listWin.end < totalCount) setListWin({ start: listWin.start, end: Math.min(totalCount, listWin.end + Math.floor(WINDOW_SIZE / 2)) })
           }}
           scrollEventThrottle={64}
           onScroll={e => {
@@ -400,6 +422,27 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
             </View>
           }
         />
+        {/* 拖动指示条时的位置提示 */}
+        {dragTip == null
+          ? null
+          : <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <View style={{
+                paddingHorizontal: m.side * 0.6, paddingVertical: m.fontSm * 0.4,
+                borderRadius: m.fontSm, backgroundColor: theme['c-content-background'],
+                borderWidth: 1, borderColor: theme['c-border-background'],
+              }}>
+                <Text size={m.fontMd} color={theme['c-primary']}>{`第 ${Math.min(dragTip + 1, totalCount)} 首`}</Text>
+                <Text size={m.fontSm} color={theme['c-500']}>{`共 ${totalCount} 首`}</Text>
+              </View>
+            </View>
+        }
+
         {/* 滚动指示条：可按住拖动；系统自带的那根已关闭，避免出现两条 */}
         {barUi.visible
           ? <View
