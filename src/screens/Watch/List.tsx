@@ -124,6 +124,20 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     () => keyword ? searchListMusic(musicList as LX.Music.MusicInfo[], keyword) : (musicList as LX.Music.MusicInfo[]),
     [musicList, keyword],
   )
+  // ── 分页挂载 ──
+  // 几千首时一次性全部交给 FlatList，首屏会创建大量行视图并占用较多原生内存，
+  // 在手表上容易直接被系统杀掉（闪退）。这里只挂载已加载的部分，滑到底再追加。
+  const PAGE_SIZE = 200
+  const [loadedCount, setLoadedCount] = useState(PAGE_SIZE)
+  const totalCount = displayList.length
+  const pageData = useMemo(
+    () => loadedCount >= displayList.length ? displayList : displayList.slice(0, loadedCount),
+    [displayList, loadedCount],
+  )
+  // 滚动条按「全部歌曲」的高度计算，这样即使只加载了一部分，比例也是准的
+  const totalHeight = totalCount * m.row
+  const pendingOffset = useRef<number | null>(null)
+
   // ── 可拖动的滚动指示条 ──
   // 收藏几千首时，系统自带指示条在手表上又细又不能拖，只能靠手指猛划。
   // 位置用 Animated.Value 直接写到原生层：滚动时不再每帧 setState，
@@ -142,19 +156,38 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     }
     const height = Math.max(viewH * (viewH / contentH), m.barMin)
     const trackH = viewH - height
-    const ratio = Math.min(Math.max(offset / Math.max(contentH - viewH, 1), 0), 1)
+    // 比例按「全部歌曲」的高度算：即使只挂载了一部分，滑块位置也准确
+    const full = Math.max(totalHeight, contentH)
+    const ratio = Math.min(Math.max(offset / Math.max(full - viewH, 1), 0), 1)
     barGeo.current = { height, trackH, top: ratio * trackH }
     barTop.setValue(ratio * trackH)
     if (Math.abs(barUi.height - height) > 0.5 || !barUi.visible) setBarUi({ height, visible: true })
-  }, [barUi.height, barUi.visible, barTop, m.barMin])
+  }, [barUi.height, barUi.visible, barTop, m.barMin, totalHeight])
 
   const scrollToRatio = useCallback((ratio: number) => {
-    const { contentH, viewH } = scrollInfo.current
-    const maxOffset = Math.max(contentH - viewH, 0)
+    const { viewH } = scrollInfo.current
+    const maxOffset = Math.max(totalHeight - viewH, 0)
     const offset = Math.min(Math.max(ratio, 0), 1) * maxOffset
+    const targetIndex = Math.floor(offset / m.row)
     scrollInfo.current.offset = offset
+    // 目标位置还没加载：先扩容，等渲染完再跳转
+    if (targetIndex + PAGE_SIZE > loadedCount && loadedCount < totalCount) {
+      pendingOffset.current = offset
+      setLoadedCount(Math.min(totalCount, targetIndex + PAGE_SIZE))
+      return
+    }
     listRef.current?.scrollToOffset({ offset, animated: false })
-  }, [])
+  }, [totalHeight, m.row, loadedCount, totalCount])
+
+  // 扩容完成后再执行暂存的跳转
+  useEffect(() => {
+    if (pendingOffset.current == null) return
+    const offset = pendingOffset.current
+    pendingOffset.current = null
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset, animated: false })
+    })
+  }, [loadedCount])
 
   const pan = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -170,6 +203,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       scrollToRatio(top / trackH)
     },
   }), [barTop, scrollToRatio])
+
+  useEffect(() => { setLoadedCount(PAGE_SIZE) }, [activeListId, keyword])
 
   // 搜索结果的索引与原列表不同，播放/菜单要用真实索引
   const indexMap = useMemo(() => {
@@ -330,7 +365,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           ref={listRef}
           style={styles.list}
           contentContainerStyle={{ paddingHorizontal: m.side * 0.4 }}
-          data={displayList}
+          data={pageData}
           keyExtractor={(item, index) => `${item.id}_${index}`}
           renderItem={renderItem}
           // 行高固定，给出布局信息后几千首时滚动与定位都快得多
@@ -342,6 +377,10 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           windowSize={3}
           removeClippedSubviews
           showsVerticalScrollIndicator={false}
+          onEndReachedThreshold={0.8}
+          onEndReached={() => {
+            if (loadedCount < totalCount) setLoadedCount(Math.min(totalCount, loadedCount + PAGE_SIZE))
+          }}
           scrollEventThrottle={16}
           onScroll={e => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
