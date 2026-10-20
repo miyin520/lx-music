@@ -75,7 +75,7 @@ const SongRow = memo(({ item, index, realIndex, active, isPlay, theme, m, onPlay
       <View style={{ width: m.fontMd * 1.6, alignItems: 'center' }}>
         {
           active
-            ? <Icon name={isPlay ? 'pause' : 'play-outline'} size={m.iconSm} color={theme['c-primary']} />
+            ? <Icon name={isPlay ? 'pause' : 'play-outline'} size={m.fontMd * 0.95} color={theme['c-primary']} />
             : <Text size={m.fontSm} color={theme['c-350']}>{index + 1}</Text>
         }
       </View>
@@ -148,6 +148,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   const barGeo = useRef({ height: 0, trackH: 0, top: 0 })
   const [barUi, setBarUi] = useState({ height: 0, visible: false })
   const dragStart = useRef(0)
+  const lastSyncedTop = useRef(0)
 
   const syncBar = useCallback((offset: number, contentH: number, viewH: number) => {
     if (contentH <= viewH + 1 || viewH <= 0) {
@@ -160,7 +161,11 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     const full = Math.max(totalHeight, contentH)
     const ratio = Math.min(Math.max(offset / Math.max(full - viewH, 1), 0), 1)
     barGeo.current = { height, trackH, top: ratio * trackH }
-    barTop.setValue(ratio * trackH)
+    // 位移小于 1.5dp 不更新：滚动条只是指示用途，减少跨桥调用是主要性能手段
+    if (Math.abs(barGeo.current.top - lastSyncedTop.current) > 1.5) {
+      lastSyncedTop.current = barGeo.current.top
+      barTop.setValue(barGeo.current.top)
+    }
     if (Math.abs(barUi.height - height) > 0.5 || !barUi.visible) setBarUi({ height, visible: true })
   }, [barUi.height, barUi.visible, barTop, m.barMin, totalHeight])
 
@@ -381,7 +386,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           onEndReached={() => {
             if (loadedCount < totalCount) setLoadedCount(Math.min(totalCount, loadedCount + PAGE_SIZE))
           }}
-          scrollEventThrottle={16}
+          scrollEventThrottle={64}
           onScroll={e => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
             scrollInfo.current.offset = contentOffset.y
