@@ -45,25 +45,55 @@ export const useMusicList = () => {
   const [list, setList] = useState<LX.List.ListMusics>([])
 
   useEffect(() => {
-    const handleToggle = (activeListId: string) => {
-      void getListMusics(activeListId).then((list) => {
-        setList([...list])
+    let disposed = false
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let retryCount = 0
+
+    const load = (listId?: string) => {
+      void getListMusics(listId ?? state.activeListId).then((musics) => {
+        if (disposed) return
+        setList([...musics])
+        // 首次启动时数据库/列表可能尚未加载完成，此时会拿到空数组。
+        // 以前只有「切换列表」才会重新读取，于是列表一直空着；
+        // 这里对空结果做有限次重试，避免必须手动切换一次才显示。
+        if (!musics.length && retryCount < 3) {
+          retryCount++
+          if (retryTimer) clearTimeout(retryTimer)
+          retryTimer = setTimeout(() => {
+            retryTimer = null
+            load()
+          }, 400 * retryCount)
+        }
       })
+    }
+
+    const handleToggle = (activeListId: string) => {
+      retryCount = 0
+      load(activeListId)
     }
     const handleChange = (ids: string[]) => {
       if (!ids.includes(state.activeListId)) return
-      void getListMusics(state.activeListId).then((list) => {
-        setList([...list])
-      })
+      retryCount = 0
+      load()
     }
+    // 用户列表数据加载完成（启动时）
+    const handleListsUpdated = () => {
+      retryCount = 0
+      load()
+    }
+
     global.state_event.on('mylistToggled', handleToggle)
     global.app_event.on('myListMusicUpdate', handleChange)
+    global.state_event.on('mylistUpdated', handleListsUpdated)
 
-    handleToggle(state.activeListId)
+    load()
 
     return () => {
+      disposed = true
+      if (retryTimer) clearTimeout(retryTimer)
       global.state_event.off('mylistToggled', handleToggle)
       global.app_event.off('myListMusicUpdate', handleChange)
+      global.state_event.off('mylistUpdated', handleListsUpdated)
     }
   }, [])
 
