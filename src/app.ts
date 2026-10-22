@@ -49,12 +49,15 @@ void Promise.all([getFontSize(), windowSizeTools.init()]).then(async([fontSize])
     isInited ||= true
   }
   const { init: initNavigation, navigations } = await import('@/navigation')
+  log.info('boot: navigation module loaded')
 
   initNavigation(async() => {
+    log.info('boot: initNavigation callback')
     await handleInit()
     if (!isInited) return
     // import('@/utils/nativeModules/cryptoTest')
 
+    log.info('boot: pushing home screen')
     await navigations.pushHomeScreen().then(() => {
       log.info('boot: home screen pushed')
       void handlePushedHomeScreen()
