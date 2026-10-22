@@ -22,6 +22,15 @@ const logTools = {
   },
 }
 
+/**
+ * 启动打点
+ * 每次冷启动写一行，崩溃后可通过"设置-分享错误日志"看出进程走到哪一步
+ */
+export const logAppStart = () => {
+  const time = new Date().toLocaleString()
+  logTools.writeLog(`==== APP START ${time} ====`)
+}
+
 export const init = async() => {
   return logTools.initLogFile()
 }
