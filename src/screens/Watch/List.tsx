@@ -139,6 +139,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   // 滚动条按「全部歌曲」的高度计算，这样即使只挂载了一段，比例也是准的
   const totalHeight = totalCount * m.row
   const pendingIndex = useRef<number | null>(null)
+  const jumpToRef = useRef<(index: number) => void>(() => {})
 
   // ── 可拖动的滚动指示条 ──
   // 收藏几千首时，系统自带指示条在手表上又细又不能拖，只能靠手指猛划。
@@ -186,6 +187,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     setListWin({ start, end: Math.min(totalCount, start + WINDOW_SIZE) })
   }, [listWin.start, listWin.end, totalCount, m.row])
 
+  jumpToRef.current = jumpToIndex
+
   // 换窗口后执行定位
   useEffect(() => {
     if (pendingIndex.current == null) return
@@ -200,15 +203,20 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   // 之前每移动一像素就 scrollToOffset 一次，等于每一帧都在重排列表，手表上必然卡。
   const [dragTip, setDragTip] = useState<number | null>(null)
   const lastTipIndex = useRef(-1)
+  // 手势对象必须只创建一次：
+  // 之前它依赖 jumpToIndex/totalCount，拖动中每次 setDragTip 触发重渲染都会重建
+  // PanResponder，正在进行的拖动手势会失效 —— 表现就是「有时候拖不动」。
+  const latest = useRef({ totalCount, jumpToIndex })
+  latest.current = { totalCount, jumpToIndex }
 
-  const pan = useMemo(() => PanResponder.create({
+  const pan = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
     onPanResponderGrant: () => {
       dragStart.current = barGeo.current.top
       lastTipIndex.current = -1
-      setDragTip(Math.floor((barGeo.current.top / Math.max(barGeo.current.trackH, 1)) * totalCount))
+      setDragTip(Math.floor((barGeo.current.top / Math.max(barGeo.current.trackH, 1)) * latest.current.totalCount))
     },
     onPanResponderMove: (_evt, gesture) => {
       const { trackH } = barGeo.current
@@ -216,7 +224,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       const top = Math.min(Math.max(dragStart.current + gesture.dy, 0), trackH)
       barGeo.current.top = top
       barTop.setValue(top)
-      const index = Math.floor((top / trackH) * totalCount)
+      const index = Math.floor((top / trackH) * latest.current.totalCount)
       if (index != lastTipIndex.current) {
         lastTipIndex.current = index
         setDragTip(index)
@@ -225,10 +233,12 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     onPanResponderRelease: () => {
       const { trackH } = barGeo.current
       setDragTip(null)
-      if (trackH > 0 && totalCount) jumpToIndex(Math.floor((barGeo.current.top / trackH) * totalCount))
+      if (trackH > 0 && latest.current.totalCount) {
+        jumpToRef.current(Math.floor((barGeo.current.top / trackH) * latest.current.totalCount))
+      }
     },
     onPanResponderTerminate: () => { setDragTip(null) },
-  }), [barTop, jumpToIndex, totalCount])
+  })).current
 
   useEffect(() => { setListWin({ start: 0, end: WINDOW_SIZE }) }, [activeListId, keyword])
 
@@ -458,6 +468,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
             >
               <Animated.View
                 {...pan.panHandlers}
+                // 滑块本身较窄，扩大命中范围，避免"点了没反应"
+                hitSlop={{ left: m.barTouchW / 2, right: m.barTouchW / 2, top: 8, bottom: 8 }}
                 style={{
                   position: 'absolute',
                   top: 0,
