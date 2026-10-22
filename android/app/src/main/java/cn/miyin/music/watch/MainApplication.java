@@ -61,12 +61,15 @@ public class MainApplication extends NavigationApplication {
 
   @Override
   public void onCreate() {
+    NativeBootLog.log(this, "Application.onCreate start");
     super.onCreate();
+    NativeBootLog.log(this, "Application.onCreate after super");
 
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       DefaultNewArchitectureEntryPoint.load();
     }
     ReactNativeFlipper.initializeFlipper(this, getReactNativeHost().getReactInstanceManager());
+    NativeBootLog.log(this, "Application.onCreate done");
   }
 }

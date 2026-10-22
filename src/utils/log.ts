@@ -28,17 +28,20 @@ const logTools = {
  */
 export const logAppStart = () => {
   const time = new Date().toLocaleString()
+  const version = process.versions.app ?? '?'
+  // 先同步写入本次启动，再做其它检查：
+  // 之前写成异步链，进程若在 JS 启动早期就被杀，这行打点根本来不及落盘
+  logTools.writeLog(`==== APP START ${time} v${version} ====`)
   void (async() => {
-    // 上一次启动如果没走到 "startup complete"，说明是启动阶段中断（崩溃/被杀）
     try {
       const content = await readFile(logPath)
       const lines = content.split('\n').filter((line: string) => line.trim())
-      const last = lines[lines.length - 1] ?? ''
-      if (lines.length && last.includes('boot:') && !last.includes('startup complete')) {
-        logTools.writeLog(`boot: 上次启动未走完（最后一步：${last.replace(/^\d{4}\/\d{1,2}\/\d{1,2} .{8} LOG /, '')}）`)
+      // 上一次（排除刚写的这行）最后一条 boot 记录
+      const prev = lines.slice(0, -1).reverse().find((line: string) => line.includes('boot:'))
+      if (prev && !prev.includes('startup complete')) {
+        logTools.writeLog(`boot: 上次启动未走完（最后一步：${prev.replace(/^\d{4}\/\d{1,2}\/\d{1,2} .{8} /, '')}）`)
       }
     } catch {}
-    logTools.writeLog(`==== APP START ${time} v${process.versions.app ?? '?'} ====`)
   })()
 }
 
