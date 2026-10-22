@@ -1,5 +1,5 @@
 import '@/utils/errorHandle'
-import { init as initLog, logAppStart } from '@/utils/log'
+import { init as initLog, logAppStart, log } from '@/utils/log'
 import { bootLog, getBootLog } from '@/utils/bootLog'
 import '@/config/globalData'
 import { getFontSize } from '@/utils/data'
@@ -56,6 +56,7 @@ void Promise.all([getFontSize(), windowSizeTools.init()]).then(async([fontSize])
     // import('@/utils/nativeModules/cryptoTest')
 
     await navigations.pushHomeScreen().then(() => {
+      log.info('boot: home screen pushed')
       void handlePushedHomeScreen()
     }).catch((err: any) => {
       void tipDialog({

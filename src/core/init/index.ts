@@ -13,17 +13,25 @@ import commonActions from '@/store/common/action'
 import settingState from '@/store/setting/state'
 import { checkUpdate } from '@/core/version'
 import { bootLog } from '@/utils/bootLog'
+import { log } from '@/utils/log'
 import { cheatTip } from '@/utils/tools'
 
 let isFirstPush = true
 const handlePushedHomeScreen = async() => {
+  log.info('boot: home pushed')
   await cheatTip()
+  log.info('boot: cheat tip passed')
   if (settingState.setting['common.isAgreePact']) {
     if (isFirstPush) {
       isFirstPush = false
-      // 手表版：不做更新检查，避免弹出更新提示
-      void checkUpdate()
-      void initDeeplink()
+      // 启动阶段的附加任务出错不应该让应用挂掉
+      try {
+        void checkUpdate()
+      } catch (err) { log.error(err as Error) }
+      try {
+        void initDeeplink()
+      } catch (err) { log.error(err as Error) }
+      log.info('boot: startup tasks queued')
     }
   } else {
     if (isFirstPush) isFirstPush = false
