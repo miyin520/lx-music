@@ -37,6 +37,7 @@ const handlePushedHomeScreen = async() => {
     if (isFirstPush) isFirstPush = false
     showPactModal()
   }
+  log.info('boot: startup complete')
 }
 
 let isInited = false

@@ -28,7 +28,18 @@ const logTools = {
  */
 export const logAppStart = () => {
   const time = new Date().toLocaleString()
-  logTools.writeLog(`==== APP START ${time} ====`)
+  void (async() => {
+    // 上一次启动如果没走到 "startup complete"，说明是启动阶段中断（崩溃/被杀）
+    try {
+      const content = await readFile(logPath)
+      const lines = content.split('\n').filter((line: string) => line.trim())
+      const last = lines[lines.length - 1] ?? ''
+      if (lines.length && last.includes('boot:') && !last.includes('startup complete')) {
+        logTools.writeLog(`boot: 上次启动未走完（最后一步：${last.replace(/^\d{4}\/\d{1,2}\/\d{1,2} .{8} LOG /, '')}）`)
+      }
+    } catch {}
+    logTools.writeLog(`==== APP START ${time} v${process.versions.app ?? '?'} ====`)
+  })()
 }
 
 export const init = async() => {
