@@ -180,8 +180,24 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
     global.app_event.picUpdated()
   })
 
+  loadLyricWithRetry(musicInfo)
+
+  if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
+}
+
+
+/**
+ * 拉取并设置歌词，失败或结果为空时自动重试。
+ * 之前只在切歌时请求一次，网络波动失败后歌词会一直空白，直到下一首。
+ */
+const loadLyricWithRetry = (musicInfo: LX.Music.MusicInfo | LX.Download.ListItem, attempt = 0) => {
+  const currentId = () => playerState.playMusicInfo.musicInfo?.id
   void getLyricInfo({ musicInfo }).then((lyricInfo) => {
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
+    if (musicInfo.id != currentId()) return
+    if (!lyricInfo.lyric && attempt < 3) {
+      setTimeout(() => { loadLyricWithRetry(musicInfo, attempt + 1) }, 1500 * (attempt + 1))
+      return
+    }
     setMusicInfo({
       lrc: lyricInfo.lyric,
       tlrc: lyricInfo.tlyric,
@@ -192,13 +208,15 @@ const handleRestorePlay = async(restorePlayInfo: LX.Player.SavedPlayInfo) => {
     global.app_event.lyricUpdated()
   }).catch((err) => {
     console.log(err)
-    if (musicInfo.id != playMusicInfo.musicInfo?.id) return
-    setStatusText(global.i18n.t('lyric__load_error'))
+    if (musicInfo.id != currentId()) return
+    // 网络波动导致失败：退避重试几次，避免歌词永久空白
+    if (attempt < 3) {
+      setTimeout(() => { loadLyricWithRetry(musicInfo, attempt + 1) }, 1500 * (attempt + 1))
+    } else {
+      setStatusText(global.i18n.t('lyric__load_error'))
+    }
   })
-
-  if (settingState.setting['player.togglePlayMethod'] == 'random' && !playMusicInfo.isTempPlay) addPlayedList(playMusicInfo as LX.Player.PlayMusicInfo)
 }
-
 
 const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) => {
   setMusicUrl(musicInfo)
@@ -212,21 +230,7 @@ const debouncePlay = debounceBackgroundTimer((musicInfo: LX.Player.PlayMusic) =>
     global.app_event.picUpdated()
   })
 
-  void getLyricInfo({ musicInfo }).then((lyricInfo) => {
-    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
-    setMusicInfo({
-      lrc: lyricInfo.lyric,
-      tlrc: lyricInfo.tlyric,
-      lxlrc: lyricInfo.lxlyric,
-      rlrc: lyricInfo.rlyric,
-      rawlrc: lyricInfo.rawlrcInfo.lyric,
-    })
-    global.app_event.lyricUpdated()
-  }).catch((err) => {
-    console.log(err)
-    if (musicInfo.id != playerState.playMusicInfo.musicInfo?.id) return
-    setStatusText(global.i18n.t('lyric__load_error'))
-  })
+  loadLyricWithRetry(musicInfo)
 }, 200)
 
 // 处理音乐播放

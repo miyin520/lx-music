@@ -153,18 +153,20 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   const dragStart = useRef(0)
   const lastSyncedTop = useRef(0)
 
-  const syncBar = useCallback((windowOffset: number, contentH: number, viewH: number) => {
-    if (totalHeight <= viewH + 1 || viewH <= 0) {
+  // 滑块高度直接按「行数」算，不依赖 contentH。
+  // 之前用 contentH 计算，首次布局时 contentH 还是 0，会得到 Infinity 的高度，
+  // 原生视图拿到非法尺寸后就再也不能拖了（只能重启）—— 用户反馈的正是这个现象。
+  const syncBar = useCallback((windowOffset: number, viewH: number) => {
+    if (viewH <= 0 || totalCount <= 0) {
       if (barUi.visible) setBarUi({ height: 0, visible: false })
       return
     }
-    const height = Math.max(viewH * (viewH / contentH), m.barMin)
-    const trackH = viewH - height
-    // 比例按「全部歌曲」的高度算：即使只挂载了一部分，滑块位置也准确
-    const full = Math.max(totalHeight, contentH)
+    const visibleRows = Math.max(viewH / m.row, 1)
+    const height = Math.max(viewH * Math.min(visibleRows / totalCount, 1), m.barMin)
+    const trackH = Math.max(viewH - height, 0)
     // windowOffset 是当前窗口内的偏移，加上窗口起点才是歌曲在总歌单里的位置
     const globalOffset = listWin.start * m.row + windowOffset
-    const ratio = Math.min(Math.max(globalOffset / Math.max(full - viewH, 1), 0), 1)
+    const ratio = Math.min(Math.max(globalOffset / Math.max(totalHeight - viewH, 1), 0), 1)
     barGeo.current = { height, trackH, top: ratio * trackH }
     // 位移小于 1.5dp 不更新：滚动条只是指示用途，减少跨桥调用是主要性能手段
     if (Math.abs(barGeo.current.top - lastSyncedTop.current) > 1.5) {
@@ -172,7 +174,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       barTop.setValue(barGeo.current.top)
     }
     if (Math.abs(barUi.height - height) > 0.5 || !barUi.visible) setBarUi({ height, visible: true })
-  }, [barUi.height, barUi.visible, barTop, m.barMin, totalHeight, listWin.start, m.row])
+  }, [barUi.height, barUi.visible, barTop, m.barMin, totalHeight, totalCount, listWin.start, m.row])
 
   const jumpToIndex = useCallback((index: number) => {
     const target = Math.min(Math.max(index, 0), Math.max(totalCount - 1, 0))
@@ -394,7 +396,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
         onLayout={e => {
           const { height } = e.nativeEvent.layout
           scrollInfo.current.viewH = height
-          syncBar(scrollInfo.current.offset, scrollInfo.current.contentH, height)
+          syncBar(scrollInfo.current.offset, height)
         }}
       >
         <FlatList
@@ -424,7 +426,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
             scrollInfo.current.offset = contentOffset.y
             scrollInfo.current.contentH = contentSize.height
             scrollInfo.current.viewH = layoutMeasurement.height
-            syncBar(contentOffset.y, contentSize.height, layoutMeasurement.height)
+            syncBar(contentOffset.y, layoutMeasurement.height)
           }}
           ListEmptyComponent={
             <View style={{ paddingTop: m.height * 0.06, alignItems: 'center' }}>
