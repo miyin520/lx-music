@@ -2,6 +2,7 @@ import { httpGet } from '@/utils/request'
 import { downloadFile, stopDownload, temporaryDirectoryPath } from '@/utils/fs'
 import { getSupportedAbis, installApk } from '@/utils/nativeModules/utils'
 import { APP_PROVIDER_NAME } from '@/config/constant'
+import { log } from '@/utils/log'
 
 const abis = [
   'arm64-v8a',
@@ -62,11 +63,23 @@ export const getVersionInfo = async() => {
 }
 
 const getTargetAbi = async() => {
-  const supportedAbis = await getSupportedAbis()
+  let supportedAbis = []
+  try {
+    supportedAbis = await getSupportedAbis()
+  } catch (err) {
+    log.error('update: 读取设备架构失败，退回通用包', err)
+  }
+  log.info(`update: 设备架构 ${JSON.stringify(supportedAbis)}`)
   for (const abi of abis) {
     if (supportedAbis.includes(abi)) return abi
   }
   return abis[abis.length - 1]
+}
+
+/** 判断附件名是否对应某个架构（要求完整分隔，避免 armeabi 误配 armeabi-v7a 之类） */
+const matchAbi = (name, abi) => {
+  const lower = String(name || '').toLowerCase()
+  return lower.includes(`-${abi}.apk`) || lower.includes(`-${abi}-`)
 }
 let downloadJobId = null
 const noop = (total, download) => {}
@@ -78,10 +91,11 @@ export const downloadNewVersion = async(version, onDownload = noop) => {
   const assets = info.assets || []
   const lower = (x) => String(x.name || '').toLowerCase()
   const asset =
-    assets.find(a => lower(a).includes(abi)) ||
-    assets.find(a => lower(a).includes('universal')) ||
+    assets.find(a => matchAbi(a.name, abi)) ||
+    assets.find(a => matchAbi(a.name, 'universal')) ||
     assets.find(a => /\.apk$/i.test(a.name))
   if (!asset) throw new Error('no apk asset in release')
+  log.info(`update: 目标架构 ${abi}，选用附件 ${asset.name}（${assets.length} 个候选）`)
 
   const savePath = temporaryDirectoryPath + '/lx-music-watch.apk'
 
@@ -101,6 +115,7 @@ export const downloadNewVersion = async(version, onDownload = noop) => {
   downloadJobId = jobId
   return promise.then(() => {
     apkSavePath = savePath
+    log.info(`update: 下载完成 ${savePath}`)
     return updateApp()
   })
 }
