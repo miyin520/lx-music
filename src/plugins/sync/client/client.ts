@@ -10,6 +10,7 @@ import { dateFormat } from '@/utils/common'
 import { createMsg2call } from 'message2call'
 import { toast } from '@/utils/tools'
 import { SYNC_CLOSE_CODE, SYNC_CODE } from '../constants'
+import { isWatch } from '@/utils/watchMode'
 
 let status: LX.Sync.Status = {
   status: false,
@@ -159,7 +160,8 @@ export const connect = (urlInfo: LX.Sync.UrlInfo, keyInfo: LX.Sync.KeyInfo) => {
     funcsObj: {
       ...callObj,
       finished() {
-        toast('Sync connected')
+        // 表盘界面每次进入都会重连一次，弹这个提示没有意义（用户反馈）
+        if (!isWatch()) toast('Sync connected')
         client!.isReady = true
         sendSyncStatus({
           status: true,
