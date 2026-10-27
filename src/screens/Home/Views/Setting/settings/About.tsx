@@ -1,12 +1,10 @@
 import { memo } from 'react'
-import { View, TouchableOpacity, Share } from 'react-native'
+import { View, TouchableOpacity } from 'react-native'
 
 import Section from '../components/Section'
 // import Button from './components/Button'
 
 import { createStyle, openUrl, clipboardWriteText } from '@/utils/tools'
-import { getLogs } from '@/utils/log'
-import { getBootLog } from '@/utils/bootLog'
 // import { showPactModal } from '@/navigation'
 import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
@@ -24,17 +22,6 @@ const QQ_GROUP = '439155836'
 export default memo(() => {
   const theme = useTheme()
   const t = useI18n()
-  const shareLogs = () => {
-    void (async() => {
-      let errLog = ''
-      try { errLog = await getLogs() } catch { errLog = '（读取错误日志失败）' }
-      void Share.share({
-        title: 'LX 手表版日志',
-        message: `【启动日志】\n${getBootLog()}\n\n【错误日志】\n${errLog}`,
-      })
-    })()
-  }
-
   const openWatchRepoPage = () => {
     void openUrl('https://github.com/miyin520/lx-music')
   }
@@ -92,12 +79,6 @@ export default memo(() => {
         <Text style={styles.text}>反馈与交流：QQ 群 {QQ_GROUP}（点击复制群号）</Text>
         <TouchableOpacity onPress={() => { clipboardWriteText(QQ_GROUP) }}>
           <Text style={textLinkStyle}>{QQ_GROUP}</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.part}>
-        <Text style={styles.text}>遇到闪退等异常时，可把日志发给开发者：</Text>
-        <TouchableOpacity onPress={shareLogs}>
-          <Text style={textLinkStyle}>分享错误日志</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.part}>

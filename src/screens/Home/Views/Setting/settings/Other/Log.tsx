@@ -1,6 +1,7 @@
 import { memo, useRef, useState, useEffect } from 'react'
-import { View } from 'react-native'
+import { View, Share } from 'react-native'
 import { getLogs, clearLogs } from '@/utils/log'
+import { getBootLog } from '@/utils/bootLog'
 // import { gzip, ungzip } from 'pako'
 
 import SubTitle from '../../components/SubTitle'
@@ -32,6 +33,17 @@ export default memo(() => {
   const openLogModal = () => {
     getErrorLog()
     alertRef.current?.setVisible(true)
+  }
+
+  const handleShareLog = () => {
+    void (async() => {
+      let log = ''
+      try { log = await getLogs() } catch { log = '（读取日志失败）' }
+      void Share.share({
+        title: 'LX 手表版日志',
+        message: `【启动日志】\n${getBootLog()}\n\n【错误日志】\n${log}`,
+      })
+    })()
   }
 
   const handleCleanLog = () => {
@@ -68,6 +80,7 @@ export default memo(() => {
         </View>
         <View style={styles.btn}>
           <Button onPress={openLogModal}>{t('setting_other_log_btn_show')}</Button>
+          <Button style={styles.shareBtn} onPress={handleShareLog}>{t('setting_other_log_btn_share')}</Button>
         </View>
       </SubTitle>
       <ConfirmAlert
@@ -98,5 +111,8 @@ const styles = createStyle({
   },
   btn: {
     flexDirection: 'row',
+  },
+  shareBtn: {
+    marginLeft: 10,
   },
 })
