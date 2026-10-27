@@ -212,10 +212,23 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
   latest.current = { totalCount, jumpToIndex }
 
   const pan = useRef(PanResponder.create({
+    // Capture 阶段就抢：手指可能先落在列表上再滑到滑块，
+    // 不抢的话列表会先把手势吃掉，表现为"拖动条没反应"
+    onStartShouldSetPanResponderCapture: () => true,
+    onMoveShouldSetPanResponderCapture: (_evt, gesture) => Math.abs(gesture.dx) < Math.abs(gesture.dy),
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => {
+    onPanResponderGrant: (evt) => {
+      const { trackH, height } = barGeo.current
+      const y = evt.nativeEvent.locationY
+      // 点在轨道空白处：先把滑块移过去，再从这个位置开始拖
+      if (trackH > 0 && y >= 0) {
+        const target = Math.min(Math.max(y - height / 2, 0), trackH)
+        barGeo.current.top = target
+        barTop.setValue(target)
+      }
       dragStart.current = barGeo.current.top
       lastTipIndex.current = -1
       setDragTip(Math.floor((barGeo.current.top / Math.max(barGeo.current.trackH, 1)) * latest.current.totalCount))
@@ -458,10 +471,12 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
         {/* 滚动指示条：可按住拖动；系统自带的那根已关闭，避免出现两条 */}
         {barUi.visible
           ? <View
-              pointerEvents="box-none"
+              {...pan.panHandlers}
+              // 整条轨道都能接手势：手指落在轨道任意位置即可直接拖动滑块，
+              // 不用精确按到滑块上，也不会和列表的纵向滚动抢手势
               style={{
                 position: 'absolute',
-                right: m.side * 0.1,
+                right: m.side * 0.02,
                 top: 0,
                 bottom: 0,
                 width: m.barTouchW,
@@ -469,9 +484,7 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
               }}
             >
               <Animated.View
-                {...pan.panHandlers}
-                // 滑块本身较窄，扩大命中范围，避免"点了没反应"
-                hitSlop={{ left: m.barTouchW / 2, right: m.barTouchW / 2, top: 8, bottom: 8 }}
+                pointerEvents="none"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -512,8 +525,9 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
                           activeOpacity={0.6}
                           onPress={() => { setActiveList(item.id); setShowListPicker(false) }}
                         >
-                          <View style={{ width: m.fontMd, alignItems: 'center' }}>
-                            { active ? <Icon name="chevron-right" size={m.iconMd} color={theme['c-primary']} /> : null }
+                          {/* 容器宽度必须放得下图标，否则图标会溢出压到文字上 */}
+                          <View style={{ width: m.iconSm * 0.8, alignItems: 'center' }}>
+                            { active ? <Icon name="chevron-right" size={m.iconSm * 0.8} color={theme['c-primary']} /> : null }
                           </View>
                           <Text
                             size={m.fontMd}
