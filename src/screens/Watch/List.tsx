@@ -500,54 +500,80 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           : null}
       </View>
 
-      {/* 列表选择层：全屏、不加深色遮罩；每行右侧 ⋮ 打开该列表的菜单 */}
+      {/* 列表选择层：居中圆角卡片（和 ⋮ / 长按菜单同款）+ 右下角关闭按钮 */}
       {
         showListPicker
-          ? <View style={[styles.pickerFull, { backgroundColor: theme['c-content-background'], paddingTop: m.insetTop, paddingBottom: m.insetBottom }]}>
-              <View style={[styles.pickerHeader, { height: m.header, paddingHorizontal: m.side * 0.6 }]}>
-                <Text size={m.fontMd} color={theme['c-350']}>选择列表</Text>
-                <TouchableOpacity
-                  style={{ width: m.touch, height: m.header, alignItems: 'center', justifyContent: 'center' }}
-                  activeOpacity={0.6}
-                  onPress={() => { setShowListPicker(false) }}
-                >
-                  <Icon name="close" size={m.iconMd} color={theme['c-350']} />
-                </TouchableOpacity>
+          ? <View style={styles.pickerMask} pointerEvents="box-none">
+              <View
+                style={{
+                  position: 'absolute',
+                  top: m.insetTop + m.header,
+                  bottom: m.insetBottom + m.header * 0.4,
+                  left: m.side,
+                  right: m.side,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: theme['c-border-background'],
+                  backgroundColor: theme['c-content-background'],
+                  overflow: 'hidden',
+                }}
+              >
+                <View style={{ paddingVertical: 6, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}>
+                  <Text size={m.fontSm} color={theme['c-350']}>选择列表</Text>
+                </View>
+                <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 6 }}>
+                  {
+                    lists.map((item, listIndex) => {
+                      const active = item.id === activeListId
+                      return (
+                        <View key={item.id} style={styles.pickerRow}>
+                          <TouchableOpacity
+                            style={styles.pickerRowMain}
+                            activeOpacity={0.6}
+                            onPress={() => { setActiveList(item.id); setShowListPicker(false) }}
+                          >
+                            {/* 容器宽度必须放得下图标，否则图标会溢出压到文字上 */}
+                            <View style={{ width: m.iconSm * 0.8, alignItems: 'center' }}>
+                              { active ? <Icon name="chevron-right" size={m.iconSm * 0.8} color={theme['c-primary']} /> : null }
+                            </View>
+                            <Text
+                              size={m.fontMd}
+                              numberOfLines={1}
+                              color={active ? theme['c-primary'] : theme['c-font']}
+                              style={{ flex: 1, paddingLeft: m.side * 0.2 }}
+                            >{item.name}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
+                            activeOpacity={0.6}
+                            onPress={() => { listMenuRef.current?.show({ listInfo: item, index: listIndex }, menuAnchor) }}
+                          >
+                            <Icon name="dots-vertical" size={m.iconMd} color={theme['c-350']} />
+                          </TouchableOpacity>
+                        </View>
+                      )
+                    })
+                  }
+                </ScrollView>
+                {/* 右下角关闭：与菜单里的绿色按钮样式一致 */}
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingBottom: 10 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => { setShowListPicker(false) }}
+                    style={{
+                      minWidth: 84,
+                      height: 40,
+                      paddingHorizontal: 22,
+                      borderRadius: 20,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: theme['c-primary'],
+                    }}
+                  >
+                    <Text size={14} color="#FFFFFF">关闭</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: m.side * 0.4 }}>
-                {
-                  lists.map((item, listIndex) => {
-                    const active = item.id === activeListId
-                    return (
-                      <View key={item.id} style={styles.pickerRow}>
-                        <TouchableOpacity
-                          style={styles.pickerRowMain}
-                          activeOpacity={0.6}
-                          onPress={() => { setActiveList(item.id); setShowListPicker(false) }}
-                        >
-                          {/* 容器宽度必须放得下图标，否则图标会溢出压到文字上 */}
-                          <View style={{ width: m.iconSm * 0.8, alignItems: 'center' }}>
-                            { active ? <Icon name="chevron-right" size={m.iconSm * 0.8} color={theme['c-primary']} /> : null }
-                          </View>
-                          <Text
-                            size={m.fontMd}
-                            numberOfLines={1}
-                            color={active ? theme['c-primary'] : theme['c-font']}
-                            style={{ flex: 1, paddingLeft: m.side * 0.2 }}
-                          >{item.name}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
-                          activeOpacity={0.6}
-                          onPress={() => { listMenuRef.current?.show({ listInfo: item, index: listIndex }, menuAnchor) }}
-                        >
-                          <Icon name="dots-vertical" size={m.iconMd} color={theme['c-350']} />
-                        </TouchableOpacity>
-                      </View>
-                    )
-                  })
-                }
-              </ScrollView>
             </View>
           : null
       }
@@ -607,6 +633,13 @@ const styles = createStyle({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  pickerMask: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
   },
   pickerFull: {
     position: 'absolute',
