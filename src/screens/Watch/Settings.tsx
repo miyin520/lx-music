@@ -86,64 +86,71 @@ export default memo(() => {
   const [contentW, setContentW] = useState(0)
   const tileWidth = contentW > 0 ? (contentW - m.side * 0.6) / 2 : 0
 
-  if (active) {
-    const meta = TILES.find(x => x.id == active)
-    return (
-      <View style={{ flex: 1 }}>
-        <TouchableOpacity
-          style={{ height: m.header, flexDirection: 'row', alignItems: 'center', paddingHorizontal: m.side * 0.4 }}
-          activeOpacity={0.6}
-          onPress={() => { setActive(null) }}
-        >
-          <Icon name="chevron-left" size={m.iconMd} color={theme['c-primary']} />
-          <Text size={m.fontMd} color={theme['c-primary']} style={{ marginLeft: m.side * 0.2 }} numberOfLines={1}>
-            {meta?.label ?? t('nav_setting')}
-          </Text>
-        </TouchableOpacity>
+  const meta = active ? TILES.find(x => x.id == active) : null
+
+  // 方块页与分组页都保持挂载，只用 display 控制显隐：
+  // 这样从分组返回时，方块页还停在原来的滚动位置，不会跳回顶部。
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, display: active ? 'none' : 'flex' }}>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: m.side * 0.4, paddingBottom: m.insetBottom + m.side }}
-          keyboardShouldPersistTaps="always"
+          contentContainerStyle={{ paddingHorizontal: m.side * 0.5, paddingTop: m.side * 0.3, paddingBottom: m.insetBottom + m.side }}
         >
-          <SectionBody id={active} />
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}
+            onLayout={e => { setContentW(e.nativeEvent.layout.width) }}
+          >
+            {TILES.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.7}
+                onPress={() => { setActive(item.id) }}
+                style={{
+                  width: tileWidth,
+                  height: tileWidth * 0.78,
+                  marginBottom: m.side * 0.6,
+                  borderRadius: m.side * 0.6,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme['c-content-background'],
+                  borderWidth: 1,
+                  borderColor: theme['c-border-background'],
+                }}
+              >
+                <Icon name={item.icon} size={m.iconMd} color={theme['c-primary']} />
+                <Text size={m.fontSm} color={theme['c-font']} style={{ marginTop: m.fontSm * 0.5 }} numberOfLines={1}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </ScrollView>
       </View>
-    )
-  }
 
-  return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingHorizontal: m.side * 0.5, paddingTop: m.side * 0.3, paddingBottom: m.insetBottom + m.side }}
-    >
-      <View
-        style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}
-        onLayout={e => { setContentW(e.nativeEvent.layout.width) }}
-      >
-        {TILES.map(item => (
-          <TouchableOpacity
-            key={item.id}
-            activeOpacity={0.7}
-            onPress={() => { setActive(item.id) }}
-            style={{
-              width: tileWidth,
-              height: tileWidth * 0.78,
-              marginBottom: m.side * 0.6,
-              borderRadius: m.side * 0.6,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: theme['c-content-background'],
-              borderWidth: 1,
-              borderColor: theme['c-border-background'],
-            }}
-          >
-            <Icon name={item.icon} size={m.iconMd} color={theme['c-primary']} />
-            <Text size={m.fontSm} color={theme['c-font']} style={{ marginTop: m.fontSm * 0.5 }} numberOfLines={1}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </ScrollView>
+      { active
+        ? (
+            <View style={{ flex: 1 }}>
+              <TouchableOpacity
+                style={{ height: m.header, flexDirection: 'row', alignItems: 'center', paddingHorizontal: m.side * 0.4 }}
+                activeOpacity={0.6}
+                onPress={() => { setActive(null) }}
+              >
+                <Icon name="chevron-left" size={m.iconMd} color={theme['c-primary']} />
+                <Text size={m.fontMd} color={theme['c-primary']} style={{ marginLeft: m.side * 0.2 }} numberOfLines={1}>
+                  {meta?.label ?? t('nav_setting')}
+                </Text>
+              </TouchableOpacity>
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingHorizontal: m.side * 0.4, paddingBottom: m.insetBottom + m.side }}
+                keyboardShouldPersistTaps="always"
+              >
+                <SectionBody id={active} />
+              </ScrollView>
+            </View>
+          )
+        : null }
+    </View>
   )
 })

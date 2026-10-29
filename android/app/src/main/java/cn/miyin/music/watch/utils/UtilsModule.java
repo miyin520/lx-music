@@ -115,6 +115,27 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     }
   }
 
+  /**
+   * 重启应用：先拉起一个新的 MainActivity，再结束当前进程。
+   * 字体大小这类需要重建界面的设置改完后，用它让改动立即生效。
+   */
+  @ReactMethod
+  public void restartApp() {
+    try {
+      Context context = reactContext.getApplicationContext();
+      Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+      if (intent != null) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+      }
+      Activity activity = reactContext.getCurrentActivity();
+      if (activity != null) activity.finishAndRemoveTask();
+      android.os.Process.killProcess(android.os.Process.myPid());
+    } catch (Exception e) {
+      Log.e("Utils", "restartApp failed", e);
+    }
+  }
+
   @ReactMethod
   public void getSupportedAbis(Promise promise) {
     // https://github.com/react-native-device-info/react-native-device-info/blob/ff8f672cb08fa39a887567d6e23e2f08778e8340/android/src/main/java/com/learnium/RNDeviceInfo/RNDeviceModule.java#L877

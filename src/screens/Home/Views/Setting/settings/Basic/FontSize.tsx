@@ -10,6 +10,8 @@ import { useFontSize } from '@/store/common/hook'
 import Text from '@/components/common/Text'
 import { getTextSize } from '@/utils/pixelRatio'
 import { useTheme } from '@/store/theme/hook'
+import { tipDialog } from '@/utils/tools'
+import { restartApp } from '@/utils/nativeModules/utils'
 
 // 档位间距拉大：原来 0.8~1.3 每档只差 0.1，在小屏上看不出区别
 const LIST = [
@@ -54,7 +56,24 @@ const Item = ({ size, label }: {
 }) => {
   const isActive = useActive(size)
   // const [toggleCheckBox, setToggleCheckBox] = useState(false)
-  return <CheckBox marginRight={8} check={isActive} label={label} onChange={() => { setFontSize(size) }} need />
+  return (
+    <CheckBox
+      marginRight={8}
+      check={isActive}
+      label={label}
+      onChange={() => {
+        if (isActive) return
+        setFontSize(size)
+        // 字体大小要在界面重建后才完全生效，改完直接提示重启
+        void tipDialog({
+          title: '字体大小已修改',
+          message: '需要重启应用后生效，是否立即重启？',
+          btnText: '立即重启',
+        }).then(() => { restartApp() })
+      }}
+      need
+    />
+  )
 }
 
 export default memo(() => {

@@ -84,7 +84,6 @@ declare global {
       /**
        * 界面形态：自动识别 / 手机版 / 手表版
        */
-      'common.uiMode': 'auto' | 'phone' | 'watch'
 
       /**
        * 手表左侧导航栏位置

@@ -8,7 +8,6 @@
  */
 import { Dimensions } from 'react-native'
 import { windowSizeTools } from './windowSizeTools'
-import settingState from '@/store/setting/state'
 
 let _isWatch: boolean | null = null
 let _uiScale = 1
@@ -46,10 +45,6 @@ const getSize = (): { width: number, height: number } => {
 
 /** 惰性求值 + 缓存：第一次真正需要时才判定，避免导入期为 0 */
 const computeIsWatch = (): boolean => {
-  // 用户手动指定优先
-  const mode = settingState.setting?.['common.uiMode']
-  if (mode === 'watch') return true
-  if (mode === 'phone') return false
   const { width, height } = getSize()
   const hit = detectWatch(width, height)
   _uiScale = hit ? (Math.min(width, height) >= 400 ? 0.88 : 0.82) : 1
@@ -57,38 +52,21 @@ const computeIsWatch = (): boolean => {
 }
 
 export const initWatchMode = (width?: number, height?: number) => {
-  const mode = settingState.setting?.['common.uiMode']
-  if (mode === 'watch') {
-    _isWatch = true
-    _uiScale = 0.88
-    return _isWatch
-  }
-  if (mode === 'phone') {
-    _isWatch = false
-    _uiScale = 1
-    return _isWatch
-  }
-  if (width && height) {
-    _isWatch = detectWatch(width, height)
-    _uiScale = _isWatch ? (Math.min(width, height) >= 400 ? 0.88 : 0.82) : 1
-  } else {
-    _isWatch = computeIsWatch()
-  }
+  // 只保留手表界面：直接按屏幕尺寸算缩放系数即可
+  const size = (width && height) ? { width, height } : getSize()
+  _isWatch = true
+  _uiScale = Math.min(size.width, size.height) >= 400 ? 0.88 : 0.82
   return _isWatch
 }
 
 export const isWatch = (): boolean => {
-  // 每次都要检查用户指定（缓存值可能在用户选择之前就算好了）
-  const mode = settingState.setting?.['common.uiMode']
-  if (mode === 'watch') return true
-  if (mode === 'phone') return false
-  if (_isWatch === null) _isWatch = computeIsWatch()
-  return _isWatch
+  // 3.0.0 起只保留手表界面，这里恒定返回 true（函数保留是为了不改动各处调用）
+  return true
 }
 
 /** 小屏整体 UI 缩放系数（1 = 不缩放） */
 export const getUIScale = (): number => {
-  if (_isWatch === null) _isWatch = computeIsWatch()
+  if (_isWatch === null) initWatchMode()
   return _uiScale
 }
 

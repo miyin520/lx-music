@@ -19,7 +19,6 @@ const defaultSetting: LX.AppSetting = {
   // 圆角屏（手表）四周留白，0 = 关闭
   'common.watchScreenInset': 0,
   // 界面形态：auto = 按屏幕尺寸自动识别；phone / watch = 用户手动指定
-  'common.uiMode': 'auto',
   'common.watchRailSide': 'left',
   'common.watchRailScale': 'normal',
 
