@@ -69,7 +69,6 @@ export default forwardRef<ListMenuType, ListMenuProps>((props, ref) => {
     let has_url_cache = false
     const isLocal = musicInfo.source == 'local'
     const menu = [
-      { action: 'play', label: t('play') },
       { action: 'add', label: t('add_to') },
       { action: 'move', label: t('move_to') },
       { action: 'removeCache', disabled: !has_url_cache, label: t('list_remove_cache') },
