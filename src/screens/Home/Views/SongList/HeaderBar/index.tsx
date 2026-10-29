@@ -14,7 +14,6 @@ import SourceSelector, {
 import { type Source } from '@/store/songlist/state'
 // import { useTheme } from '@/store/theme/hook'
 import Tag, { type TagType, type TagProps } from './Tag'
-import OpenList, { type OpenListType } from './OpenList'
 // import { BorderWidths } from '@/theme'
 
 export interface HeaderBarProps {
@@ -31,7 +30,6 @@ export interface HeaderBarType {
 export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSortChange, onTagChange, onSourceChange }, ref) => {
   const sortTabRef = useRef<SortTabType>(null)
   const tagRef = useRef<TagType>(null)
-  const openListRef = useRef<OpenListType>(null)
   const sourceSelectorRef = useRef<SourceSelectorType>(null)
   // const theme = useTheme()
 
@@ -40,7 +38,6 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSortChange, onTagC
       sortTabRef.current?.setSource(source, sortId)
       tagRef.current?.setSelectedTagInfo(source, tagName, tagId)
       sourceSelectorRef.current?.setSource(source)
-      openListRef.current?.setInfo(source)
     },
   }), [])
 
@@ -49,7 +46,6 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSortChange, onTagC
     <View style={styles.searchBar}>
       <SortTab ref={sortTabRef} onSortChange={onSortChange} />
       <Tag ref={tagRef} onTagChange={onTagChange} />
-      <OpenList ref={openListRef} />
       <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} />
     </View>
   )
@@ -58,7 +54,10 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSortChange, onTagC
 const styles = createStyle({
   searchBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     height: 38,
+    // 顶部往下挪两格（约 8dp），别贴着上边缘
+    marginTop: 8,
     zIndex: 2,
     // paddingRight: 10,
     // borderBottomWidth: BorderWidths.normal,

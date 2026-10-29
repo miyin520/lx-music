@@ -9,6 +9,7 @@ import SourceSelector, {
   type SourceSelectorProps as _SourceSelectorProps,
 } from '@/components/SourceSelector'
 import SearchInput, { type SearchInputType, type SearchInputProps } from './SearchInput'
+import SearchTypeSelector from '../SearchTypeSelector'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { type Source as MusicSource } from '@/store/search/music/state'
@@ -63,6 +64,10 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
         onBlur={onHideTipList}
         onTouchStart={onShowTipList}
       />
+      {/* 结果类型切换：歌曲 / 歌单（与歌单页的「最新/最热」同一交互） */}
+      <View style={styles.typeSwitch}>
+        <SearchTypeSelector />
+      </View>
     </View>
   )
 })
@@ -77,5 +82,9 @@ const styles = createStyle({
   },
   selector: {
     // width: 86,
+  },
+  typeSwitch: {
+    maxWidth: 120,
+    justifyContent: 'center',
   },
 })
