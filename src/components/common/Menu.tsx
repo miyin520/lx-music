@@ -44,6 +44,11 @@ const styles = createStyle({
     justifyContent: 'center',
     // backgroundColor: '#ccc',
   },
+  menuItemWatch: {
+    paddingLeft: 20,
+    paddingRight: 20,
+    justifyContent: 'center',
+  },
   // menuText: {
   //   // textAlign: 'center',
   //   fontSize: 14,
@@ -80,11 +85,11 @@ const Menu = ({
   // const fadeAnim = useRef(new Animated.Value(0)).current
   // console.log(buttonPosition)
 
-  const menuItemStyle = useMemo(() => {
+  const menuItemStyle = useMemo<{ width: any, height: number }>(() => {
     const watch = isWatch()
     return {
       // 铺满整屏时条目宽度交给容器，高度放大到 52dp
-      width: watch ? undefined : (width ?? menuSize.width ?? menuItemWidth),
+      width: watch ? '100%' : (width ?? menuSize.width ?? menuItemWidth),
       height: watch ? 52 : (height ?? menuSize.height ?? menuItemHeight),
     }
   }, [menuSize, width, height])
@@ -93,12 +98,16 @@ const Menu = ({
     // 表盘屏幕小，弹出菜单挤在按钮旁边会剩下一半屏幕空白，也容易点错。
     // 这里在手表上直接铺满整屏：上下各留 8dp，条目居中排列。
     if (isWatch()) {
-      const watchWidth = Math.min(windowSize.width - 16, 320)
+      const watchWidth = Math.min(windowSize.width - 48, 300)
+      // 高度按内容算：条目 + 底部关闭按钮 + 内边距；超出屏幕再滚动
+      const contentHeight = menus.length * menuItemStyle.height + 56 + 12
+      const watchHeight = Math.min(contentHeight, windowSize.height - 72)
       return {
-        height: windowSize.height - 16,
+        height: watchHeight,
         width: watchWidth,
-        top: 8,
+        top: (windowSize.height - watchHeight) / 2,
         left: (windowSize.width - watchWidth) / 2,
+        borderRadius: 16,
       }
     }
     let menuHeight = menus.length * menuItemStyle.height
@@ -106,7 +115,7 @@ const Menu = ({
     const bottomHeight = windowSize.height - buttonPosition.y - buttonPosition.h - 20
     if (menuHeight > topHeight && menuHeight > bottomHeight) menuHeight = Math.max(topHeight, bottomHeight)
 
-    const menuWidth = menuItemStyle.width ?? menuItemWidth
+    const menuWidth = typeof menuItemStyle.width == 'number' ? menuItemStyle.width : menuItemWidth
     const bottomSpace = windowSize.height - buttonPosition.y - buttonPosition.h - 20
     const rightSpace = windowSize.width - buttonPosition.x - menuWidth
     const showInBottom = bottomSpace >= menuHeight
@@ -141,11 +150,22 @@ const Menu = ({
   // console.log(menuStyle)
   // console.log(menuItemStyle)
   return (
-    <View style={{ ...styles.menu, ...menuStyle, backgroundColor: theme['c-content-background'] }} onStartShouldSetResponder={() => true}>
+    <View
+      style={isWatch()
+        ? {
+            ...styles.menu,
+            ...menuStyle,
+            backgroundColor: theme['c-content-background'],
+            borderWidth: 1,
+            borderColor: theme['c-border-background'],
+            overflow: 'hidden',
+          }
+        : { ...styles.menu, ...menuStyle, backgroundColor: theme['c-content-background'] }}
+      onStartShouldSetResponder={() => true}
+    >
       <Animated.ScrollView
         keyboardShouldPersistTaps={'always'}
-        // 手表上菜单铺满整屏，条目少时居中显示，不会全部堆在顶部
-        contentContainerStyle={isWatch() ? { flexGrow: 1, justifyContent: 'center' } : undefined}
+        contentContainerStyle={isWatch() ? { paddingVertical: 6 } : undefined}
       >
         {
           menus.map((menu, index) => (
@@ -181,6 +201,27 @@ const Menu = ({
           ))
         }
       </Animated.ScrollView>
+      { isWatch()
+        ? (
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 10, paddingBottom: 8 }}>
+              <TouchableHighlight
+                underlayColor={theme['c-primary-background-active']}
+                onPress={onHide}
+                style={{
+                  minWidth: 84,
+                  height: 40,
+                  paddingHorizontal: 22,
+                  borderRadius: 20,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: theme['c-primary'],
+                }}
+              >
+                <Text size={14} color="#FFFFFF">关闭</Text>
+              </TouchableHighlight>
+            </View>
+          )
+        : null }
     </View>
   )
 }
