@@ -2,6 +2,8 @@ package cn.miyin.music.watch.utils;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +13,8 @@ import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
@@ -116,21 +120,32 @@ public class UtilsModule extends ReactContextBaseJavaModule {
   }
 
   /**
-   * 重启应用：先拉起一个新的 MainActivity，再结束当前进程。
-   * 字体大小这类需要重建界面的设置改完后，用它让改动立即生效。
+   * 重启应用。
+   *
+   * 之前是「先 startActivity 再立即 killProcess」，新进程还没起来就被打死，
+   * 表现为重启后闪退一次。现在改成：
+   * 先用 AlarmManager 预约 0.8 秒后拉起，再结束界面并杀进程 ——
+   * 预约时间到达时旧进程已经没了，启动的是干净的新进程。
    */
   @ReactMethod
   public void restartApp() {
     try {
       Context context = reactContext.getApplicationContext();
       Intent intent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
-      if (intent != null) {
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
+      if (intent == null) return;
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+      PendingIntent pending = PendingIntent.getActivity(
+          context, 0, intent,
+          PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+      AlarmManager alarm = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+      if (alarm != null) {
+        alarm.set(AlarmManager.RTC, System.currentTimeMillis() + 800, pending);
       }
       Activity activity = reactContext.getCurrentActivity();
       if (activity != null) activity.finishAndRemoveTask();
-      android.os.Process.killProcess(android.os.Process.myPid());
+      new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        android.os.Process.killProcess(android.os.Process.myPid());
+      }, 300);
     } catch (Exception e) {
       Log.e("Utils", "restartApp failed", e);
     }
