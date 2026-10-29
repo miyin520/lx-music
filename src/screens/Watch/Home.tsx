@@ -20,6 +20,7 @@ import Search from '@/screens/Home/Views/Search'
 import SongList from '@/screens/Home/Views/SongList'
 import Leaderboard from '@/screens/Home/Views/Leaderboard'
 import Setting from '@/screens/Home/Views/Setting'
+import WatchSettings from './Settings'
 import WatchList from './List'
 import { makeMetrics } from './metrics'
 import WatchBackground from './WatchBackground'
@@ -54,7 +55,7 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
       case 'search': return <Search />
       case 'songlist': return <SongList />
       case 'top': return <Leaderboard />
-      case 'setting':
+      case 'setting': return <WatchSettings />
       default: return <Setting />
     }
   }, [tab, componentId])

@@ -30,6 +30,7 @@ import DesktopLyricEnable, { type DesktopLyricEnableType } from '@/components/De
 import { MUSIC_TOGGLE_MODE_LIST, MUSIC_TOGGLE_MODE } from '@/config/constant'
 import { navigations } from '@/navigation'
 import { toast } from '@/utils/tools'
+import { getDuration } from '@/plugins/player'
 import { updateSetting } from '@/core/common'
 import listState from '@/store/list/state'
 import SettingPopup, { type SettingPopupType } from '@/screens/PlayDetail/components/SettingPopup'
@@ -41,61 +42,81 @@ import Image from '@/components/common/Image'
  * 表盘上原来的进度条只是个静态 View，完全无法调进度。
  * 这里用 PanResponder 实现「点一下跳到对应位置 + 按住拖动连续调整」。
  */
-const SeekBar = ({ progress, duration, onSeek, height, dotSize, barColor, trackColor }: {
+const SeekBar = ({ progress, onSeek, height, dotSize, barColor, trackColor }: {
   progress: number
-  duration: number
-  onSeek: (time: number) => void
+  onSeek: (fraction: number) => void
   height: number
   dotSize: number
   barColor: string
   trackColor: string
 }) => {
-  const widthRef = useReactRef(0)
+  /**
+   * 手表上踩过的坑：
+   *  - 松手时 locationX 常为 0 → 进度被打回开头
+   *  - measureInWindow 在虚拟屏/表盘上可能不回调 → 宽度一直是 0，怎么拖都算成 0
+   * 现在只用两个可靠的量：onLayout 给的宽度、按下时的 locationX，
+   * 移动过程中用 pageX 的**相对位移**累加，不再依赖任何异步测量。
+   */
+  const info = useReactRef({ width: 0, startX: 0, startPageX: 0, fraction: 0 })
   const [dragging, setDragging] = useState(false)
   const [dragProgress, setDragProgress] = useState(0)
+  const [holdProgress, setHoldProgress] = useState<number | null>(null)
+  const holdTimer = useReactRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const applyFromX = (x: number) => {
-    const w = widthRef.current
+  const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1)
+
+  const onGrant = (e: any) => {
+    const w = info.current.width
     if (w <= 0) return
-    const p = Math.min(Math.max(x / w, 0), 1)
+    const p = clamp01(e.nativeEvent.locationX / w)
+    info.current.startX = e.nativeEvent.locationX
+    info.current.startPageX = e.nativeEvent.pageX
+    info.current.fraction = p
+    setHoldProgress(null)
+    setDragging(true)
     setDragProgress(p)
-    return p
   }
 
-  const responder = useReactRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        setDragging(true)
-        applyFromX(evt.nativeEvent.locationX)
-      },
-      onPanResponderMove: (evt) => {
-        applyFromX(evt.nativeEvent.locationX)
-      },
-      onPanResponderRelease: (evt) => {
-        const p = applyFromX(evt.nativeEvent.locationX) ?? dragProgress
-        setDragging(false)
-        if (duration > 0) onSeek(p * duration)
-      },
-      onPanResponderTerminate: () => { setDragging(false) },
-    }),
-  ).current
+  const onMove = (e: any) => {
+    const w = info.current.width
+    if (w <= 0 || !dragging) return
+    const delta = e.nativeEvent.pageX - info.current.startPageX
+    const p = clamp01((info.current.startX + delta) / w)
+    info.current.fraction = p
+    setDragProgress(p)
+  }
 
-  const shown = dragging ? dragProgress : progress
+  const onEnd = () => {
+    if (!dragging) return
+    const p = info.current.fraction
+    setDragging(false)
+    setHoldProgress(p)
+    if (holdTimer.current) clearTimeout(holdTimer.current)
+    holdTimer.current = setTimeout(() => { setHoldProgress(null) }, 1200)
+    onSeek(p)
+  }
+
+  const shown = dragging ? dragProgress : (holdProgress ?? progress)
+
   return (
     <View
-      style={{ flex: 1, height: Math.max(height * 3, 18), justifyContent: 'center' }}
-      onLayout={(e) => { widthRef.current = e.nativeEvent.layout.width }}
-      {...responder.panHandlers}
+      style={{ height: Math.max(height * 4, 30), justifyContent: 'center' }}
+      onLayout={(e) => { info.current.width = e.nativeEvent.layout.width }}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderTerminationRequest={() => false}
+      onResponderGrant={onGrant}
+      onResponderMove={onMove}
+      onResponderRelease={onEnd}
+      onResponderTerminate={onEnd}
     >
       <View style={{ height, borderRadius: height, backgroundColor: trackColor, overflow: 'hidden' }}>
-        <View style={{ height: '100%', width: `${Math.min(Math.max(shown * 100, 0), 100)}%`, backgroundColor: barColor }} />
+        <View style={{ height: '100%', width: `${clamp01(shown) * 100}%`, backgroundColor: barColor }} />
       </View>
-      { dragging ? (
+      { dragging || holdProgress != null ? (
         <View style={{
           position: 'absolute',
-          left: `${Math.min(Math.max(shown * 100, 0), 100)}%`,
+          left: `${clamp01(shown) * 100}%`,
           marginLeft: -dotSize / 2,
           width: dotSize,
           height: dotSize,
@@ -118,6 +139,21 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const musicInfo = usePlayerMusicInfo()
   const isPlay = useIsPlay()
   const { nowPlayTimeStr, maxPlayTimeStr, progress, maxPlayTime, nowPlayTime } = useProgress(true)
+  // 跳转：优先用状态里的时长；状态里没有（例如刚切歌还没拿到）就向播放器要一次
+  const handleSeek = useCallback(async(fraction: number) => {
+    let total = maxPlayTime
+    if (!(total > 0)) {
+      try {
+        total = await getDuration()
+      } catch {}
+    }
+    if (!(total > 0)) {
+      toast('当前无法调整进度（时长未知）')
+      return
+    }
+    global.app_event.setProgress(fraction * total)
+  }, [maxPlayTime])
+
 
   // 0 = 封面，1 = 歌词
   const [page, setPage] = useState(1)
@@ -266,12 +302,11 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
           <View style={{ flex: 1, marginHorizontal: m.side * 0.4 }}>
             <SeekBar
               progress={progress}
-              duration={maxPlayTime}
-              height={Math.max(m.fontSm * 0.22, 3)}
-              dotSize={Math.max(m.fontSm * 0.8, 10)}
+              height={Math.max(m.fontSm * 0.45, 6)}
+              dotSize={Math.max(m.fontSm * 1.1, 14)}
               barColor={theme['c-primary']}
               trackColor={'rgba(128,128,128,0.3)'}
-              onSeek={(time) => { global.app_event.setProgress(time) }}
+              onSeek={(fraction) => { void handleSeek(fraction) }}
             />
           </View>
           <Text size={m.fontSm} color={theme['c-500']}>{maxPlayTimeStr}</Text>

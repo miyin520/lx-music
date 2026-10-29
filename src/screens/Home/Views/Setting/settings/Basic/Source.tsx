@@ -12,7 +12,6 @@ import { useSettingValue } from '@/store/setting/hook'
 import { useStatus, useUserApiList } from '@/store/userApi'
 import Button from '../../components/Button'
 import UserApiEditModal, { type UserApiEditModalType } from './UserApiEditModal'
-import WatchImportSource from './WatchImportSource'
 import { isWatch } from '@/utils/watchMode'
 import Text from '@/components/common/Text'
 import { useTheme } from '@/store/theme/hook'
@@ -110,8 +109,8 @@ export default memo(() => {
       <View style={styles.btn}>
         <Button onPress={handleShow}>{t('setting_basic_source_user_api_btn')}</Button>
       </View>
-      {/* 表盘上系统文件选择器/内置浏览器都用不了，给一个扫目录的入口 */}
-      { isWatch() ? <WatchImportSource /> : null }
+      {/* 「从 Download 目录导入音源」入口：用户要求去掉 */}
+
       <UserApiEditModal ref={modalRef} />
     </SubTitle>
   )

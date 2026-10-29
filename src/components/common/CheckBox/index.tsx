@@ -69,13 +69,15 @@ export default ({ check, label, children, onChange, helpTitle, helpDesc, disable
   }, [helpTitle, helpDesc, size])
 
 
-  const contentStyle = { ...styles.content, marginBottom: scaleSizeH(marginBottom) }
+  const contentStyle = { ...styles.content, marginBottom: scaleSizeH(marginBottom), paddingVertical: isWatch() ? 6 : 0 }
   const labelStyle = { ...styles.label, marginRight: scaleSizeW(marginRight) }
   // 让勾选框的中心对齐「标签文字首行」的中心：
   // 之前只靠 flex-start 对齐顶部，视觉上会偏低几个 dp。
   const labelFontSize = setSpText(15 * size)
   const labelLineHeight = isWatch() ? Math.ceil(labelFontSize * 1.38) : labelFontSize * 1.2
-  const iconSize = 24 * size
+  // 表盘上默认 24dp 的勾选框偏小，手指也不容易点准，整体放大一档
+  const boxScale = isWatch() ? 1.35 : 1
+  const iconSize = 24 * size * boxScale
   const checkOffset = (labelLineHeight - iconSize) / 2
 
   return (
@@ -83,7 +85,7 @@ export default ({ check, label, children, onChange, helpTitle, helpDesc, disable
       ? (
           <View style={contentStyle}>
             <View style={{ marginTop: checkOffset }}>
-              <CheckBox status={check ? 'checked' : 'unchecked'} disabled={true} tintColors={disabledTintColors} size={size} />
+              <CheckBox status={check ? 'checked' : 'unchecked'} disabled={true} tintColors={disabledTintColors} size={size * boxScale} />
             </View>
             <View style={labelStyle}>{label ? <Text style={styles.name} color={theme['c-500']} size={15 * size}>{label}</Text> : children}</View>
             {helpComponent}
@@ -92,7 +94,7 @@ export default ({ check, label, children, onChange, helpTitle, helpDesc, disable
       : (
           <View style={contentStyle}>
             <View style={{ marginTop: checkOffset }}>
-              <CheckBox status={check ? 'checked' : 'unchecked'} disabled={isDisabled} onPress={handleLabelPress} tintColors={tintColors} size={size} />
+              <CheckBox status={check ? 'checked' : 'unchecked'} disabled={isDisabled} onPress={handleLabelPress} tintColors={tintColors} size={size * boxScale} />
             </View>
             <TouchableOpacity style={labelStyle} activeOpacity={0.3} onPress={handleLabelPress}>
               {label ? <Text style={styles.name} size={15 * size}>{label}</Text> : children}

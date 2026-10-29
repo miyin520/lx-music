@@ -21,22 +21,25 @@ import WatchScreenInset from './WatchScreenInset'
 import WatchRail from './WatchRail'
 import UiMode from './UiMode'
 import { useI18n } from '@/lang/i18n'
+import { isWatch } from '@/utils/watchMode'
 
 export default memo(() => {
   const t = useI18n()
+  // 表盘上没有桌面按钮、状态栏、首页横滑这些场景，对应开关不显示
+  const hideOnWatch = isWatch()
 
 
   return (
     <Section title={t('setting_basic')}>
-      <IsStartupAutoPlay />
-      <IsStartupPushPlayDetailScreen />
-      <IsShowBackBtn />
-      <IsShowExitBtn />
+      {hideOnWatch ? null : <IsStartupAutoPlay />}
+      {hideOnWatch ? null : <IsStartupPushPlayDetailScreen />}
+      {hideOnWatch ? null : <IsShowBackBtn />}
+      {hideOnWatch ? null : <IsShowExitBtn />}
       <IsAutoHidePlayBar />
-      <IsHomePageScroll />
+      {hideOnWatch ? null : <IsHomePageScroll />}
       <IsAllowProgressBarSeek />
       <IsUseSystemFileSelector />
-      <IsAlwaysKeepStatusbarHeight />
+      {hideOnWatch ? null : <IsAlwaysKeepStatusbarHeight />}
       <Theme />
       <DrawerLayoutPosition />
       <Language />
