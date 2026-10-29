@@ -10,6 +10,7 @@ import IsUseSystemFileSelector from './IsUseSystemFileSelector'
 import DrawerLayoutPosition from './DrawerLayoutPosition'
 import WatchScreenInset from './WatchScreenInset'
 import WatchRail from './WatchRail'
+import IsShowRailExit from './IsShowRailExit'
 import { useI18n } from '@/lang/i18n'
 
 export default memo(() => {
@@ -25,6 +26,7 @@ export default memo(() => {
       <FontSize />
       <WatchScreenInset />
       <WatchRail />
+      <IsShowRailExit />
       <Source />
       <SourceName />
     </Section>

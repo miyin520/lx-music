@@ -281,6 +281,7 @@
   "setting_basic_watch_rail_scale_small": "Small",
   "setting_basic_watch_rail_scale_normal": "Normal",
   "setting_basic_watch_rail_scale_large": "Large",
+  "setting_basic_rail_exit": "Show exit button in sidebar",
   "setting_basic_watch_rail_side": "Sidebar position",
   "setting_basic_watch_rail_side_left": "Left",
   "setting_basic_watch_rail_side_right": "Right",

@@ -23,6 +23,7 @@ import Setting from '@/screens/Home/Views/Setting'
 import WatchSettings from './Settings'
 import WatchList from './List'
 import { makeMetrics } from './metrics'
+import { exitApp } from '@/utils/nativeModules/utils'
 import WatchBackground from './WatchBackground'
 
 type TabId = 'mine' | 'search' | 'songlist' | 'top' | 'setting'
@@ -31,6 +32,7 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
   const win = useWindowSize()
   const userInset = useSettingValue('common.watchScreenInset')
   const railSide = useSettingValue('common.watchRailSide')
+  const showRailExit = useSettingValue('common.watchRailExit')
   const fontSize = useFontSize()
   // fontSize 进依赖：改字体大小时重新算行高/高度，避免文字被裁
   const m = useMemo(() => makeMetrics(win.width, win.height, userInset), [win.width, win.height, userInset, fontSize])
@@ -95,6 +97,21 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
             )
           })
         }
+        { showRailExit
+          ? (
+              // 退出：完全结束应用（进程一并结束，播放也随之停止）
+              <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: m.sysBottom }}>
+                <TouchableOpacity
+                  style={[styles.railItem, { width: m.rail - 8, height: m.rail - 8 }]}
+                  activeOpacity={0.6}
+                  onPress={() => { exitApp() }}
+                >
+                  <Icon name="exit" size={m.iconMd} color={theme['c-500']} />
+                  <Text size={m.fontSm} color={theme['c-500']} numberOfLines={1} style={{ marginTop: 2 }}>退出</Text>
+                </TouchableOpacity>
+              </View>
+            )
+          : null }
       </View>
 
       {/* 内容区（左右留白避开圆角） */}

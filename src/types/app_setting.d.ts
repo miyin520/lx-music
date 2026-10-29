@@ -89,6 +89,7 @@ declare global {
        * 手表左侧导航栏位置
        */
       'common.watchRailSide': 'left' | 'right'
+      'common.watchRailExit': boolean
 
       /**
        * 手表导航栏大小（图标/文字/宽度一起缩放）

@@ -20,6 +20,7 @@ const defaultSetting: LX.AppSetting = {
   'common.watchScreenInset': 0,
   // 界面形态：auto = 按屏幕尺寸自动识别；phone / watch = 用户手动指定
   'common.watchRailSide': 'left',
+  'common.watchRailExit': true,
   'common.watchRailScale': 'normal',
 
   'player.startupAutoPlay': false,

@@ -281,6 +281,7 @@
   "setting_basic_watch_rail_scale_small": "小",
   "setting_basic_watch_rail_scale_normal": "标准",
   "setting_basic_watch_rail_scale_large": "大",
+  "setting_basic_rail_exit": "开启侧边栏退出键",
   "setting_basic_watch_rail_side": "侧边栏位置",
   "setting_basic_watch_rail_side_left": "左侧",
   "setting_basic_watch_rail_side_right": "右侧",
