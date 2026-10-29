@@ -80,18 +80,18 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
                 style={[
                   styles.railItem,
                   // 绿色遮罩做成正方形：宽 = 高 = 导航栏内宽
-                  { width: m.rail - 8, height: m.rail - 8 },
+                  { width: (m.rail - 8) * 0.92, height: (m.rail - 8) * 0.92 },
                   active && { backgroundColor: theme['c-primary-background-hover'] },
                 ]}
                 activeOpacity={0.6}
                 onPress={() => { setTab(id) }}
               >
-                <Icon name={icon} size={m.iconMd} color={active ? theme['c-primary'] : theme['c-500']} />
+                <Icon name={icon} size={m.iconMd * 0.9} color={active ? theme['c-primary'] : theme['c-500']} />
                 <Text
-                  size={m.fontSm}
+                  size={m.fontSm * 0.92}
                   color={active ? theme['c-primary'] : theme['c-500']}
                   numberOfLines={1}
-                  style={{ marginTop: 2 }}
+                  style={{ marginTop: 1 }}
                 >{label}</Text>
               </TouchableOpacity>
             )
@@ -99,15 +99,15 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
         }
         { showRailExit
           ? (
-              // 退出：完全结束应用（进程一并结束，播放也随之停止）
-              <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: m.sysBottom }}>
+              // 退出：紧跟在导航项后面；点击完全结束应用（进程一并结束，播放也随之停止）
+              <View>
                 <TouchableOpacity
-                  style={[styles.railItem, { width: m.rail - 8, height: m.rail - 8 }]}
+                  style={[styles.railItem, { width: (m.rail - 8) * 0.92, height: (m.rail - 8) * 0.92 }]}
                   activeOpacity={0.6}
                   onPress={() => { exitApp() }}
                 >
-                  <Icon name="exit" size={m.iconMd} color={theme['c-500']} />
-                  <Text size={m.fontSm} color={theme['c-500']} numberOfLines={1} style={{ marginTop: 2 }}>退出</Text>
+                  <Icon name="exit" size={m.iconMd * 0.9} color={theme['c-500']} />
+                  <Text size={m.fontSm * 0.92} color={theme['c-500']} numberOfLines={1} style={{ marginTop: 1 }}>退出</Text>
                 </TouchableOpacity>
               </View>
             )
