@@ -6,8 +6,6 @@ import Source from './Source'
 import SourceName from './SourceName'
 import Language from './Language'
 import FontSize from './FontSize'
-import IsAutoHidePlayBar from './IsAutoHidePlayBar'
-import IsAllowProgressBarSeek from './IsAllowProgressBarSeek'
 import IsUseSystemFileSelector from './IsUseSystemFileSelector'
 import DrawerLayoutPosition from './DrawerLayoutPosition'
 import WatchScreenInset from './WatchScreenInset'
@@ -20,8 +18,6 @@ export default memo(() => {
 
   return (
     <Section title={t('setting_basic')}>
-      <IsAutoHidePlayBar />
-      <IsAllowProgressBarSeek />
       <IsUseSystemFileSelector />
       <Theme />
       <DrawerLayoutPosition />
