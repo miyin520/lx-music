@@ -8,6 +8,7 @@ import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import Text from './Text'
 import { scaleSizeH, scaleSizeW } from '@/utils/pixelRatio'
+import { isWatch } from '@/utils/watchMode'
 
 const menuItemHeight = scaleSizeH(40)
 const menuItemWidth = scaleSizeW(100)
@@ -80,19 +81,32 @@ const Menu = ({
   // console.log(buttonPosition)
 
   const menuItemStyle = useMemo(() => {
+    const watch = isWatch()
     return {
-      width: width ?? menuSize.width ?? menuItemWidth,
-      height: height ?? menuSize.height ?? menuItemHeight,
+      // 铺满整屏时条目宽度交给容器，高度放大到 52dp
+      width: watch ? undefined : (width ?? menuSize.width ?? menuItemWidth),
+      height: watch ? 52 : (height ?? menuSize.height ?? menuItemHeight),
     }
   }, [menuSize, width, height])
 
   const menuStyle = useMemo(() => {
+    // 表盘屏幕小，弹出菜单挤在按钮旁边会剩下一半屏幕空白，也容易点错。
+    // 这里在手表上直接铺满整屏：上下各留 8dp，条目居中排列。
+    if (isWatch()) {
+      const watchWidth = Math.min(windowSize.width - 16, 320)
+      return {
+        height: windowSize.height - 16,
+        width: watchWidth,
+        top: 8,
+        left: (windowSize.width - watchWidth) / 2,
+      }
+    }
     let menuHeight = menus.length * menuItemStyle.height
     const topHeight = buttonPosition.y - 20
     const bottomHeight = windowSize.height - buttonPosition.y - buttonPosition.h - 20
     if (menuHeight > topHeight && menuHeight > bottomHeight) menuHeight = Math.max(topHeight, bottomHeight)
 
-    const menuWidth = menuItemStyle.width
+    const menuWidth = menuItemStyle.width ?? menuItemWidth
     const bottomSpace = windowSize.height - buttonPosition.y - buttonPosition.h - 20
     const rightSpace = windowSize.width - buttonPosition.x - menuWidth
     const showInBottom = bottomSpace >= menuHeight
@@ -128,7 +142,11 @@ const Menu = ({
   // console.log(menuItemStyle)
   return (
     <View style={{ ...styles.menu, ...menuStyle, backgroundColor: theme['c-content-background'] }} onStartShouldSetResponder={() => true}>
-      <Animated.ScrollView keyboardShouldPersistTaps={'always'}>
+      <Animated.ScrollView
+        keyboardShouldPersistTaps={'always'}
+        // 手表上菜单铺满整屏，条目少时居中显示，不会全部堆在顶部
+        contentContainerStyle={isWatch() ? { flexGrow: 1, justifyContent: 'center' } : undefined}
+      >
         {
           menus.map((menu, index) => (
             menu.disabled

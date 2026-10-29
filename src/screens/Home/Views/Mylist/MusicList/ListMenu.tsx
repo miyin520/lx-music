@@ -70,17 +70,9 @@ export default forwardRef<ListMenuType, ListMenuProps>((props, ref) => {
     const isLocal = musicInfo.source == 'local'
     const menu = [
       { action: 'play', label: t('play') },
-      { action: 'playLater', label: t('play_later') },
-      // { action: 'download', label: '下载' },
       { action: 'add', label: t('add_to') },
       { action: 'move', label: t('move_to') },
-      { action: 'changePosition', label: t('change_position') },
-      { action: 'toggleSource', label: t('toggle_source') },
-      { action: 'copyName', label: t('copy_name') },
-      { action: 'musicSourceDetail', disabled: isLocal, label: t('music_source_detail') },
       { action: 'removeCache', disabled: !has_url_cache, label: t('list_remove_cache') },
-      // { action: 'musicSearch', label: t('music_search') },
-      { action: 'dislike', disabled: hasDislike(musicInfo), label: t('dislike') },
       { action: 'remove', label: t('delete') },
     ]
     if (isLocal) menu.splice(5, 0, { action: 'editMetadata', disabled: !edit_metadata, label: t('edit_metadata') })

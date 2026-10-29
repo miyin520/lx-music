@@ -89,12 +89,8 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
     setMenus([
       { action: 'new', label: t('list_create') },
       { action: 'rename', disabled: !rename, label: t('list_rename') },
-      { action: 'sort', label: t('list_sort') },
-      { action: 'duplicateMusic', label: t('lists__duplicate') },
+      // 手表上不需要：排序 / 重复歌曲 / 更新 / 导入 / 导出
       { action: 'local_file', disabled: !local_file, label: t('list_select_local_file') },
-      { action: 'sync', disabled: !sync || !local_file, label: t('list_sync') },
-      { action: 'import', label: t('list_import') },
-      { action: 'export', label: t('list_export') },
       // { action: 'changePosition', label: t('change_position') },
       { action: 'remove', disabled: !remove, label: t('list_remove') },
     ])
