@@ -86,5 +86,9 @@ const styles = createStyle({
   typeSwitch: {
     maxWidth: 120,
     justifyContent: 'center',
+    // 整体往右挪一点，别和搜索框贴太近
+    marginLeft: 6,
+    marginRight: 2,
+    paddingRight: 6,
   },
 })

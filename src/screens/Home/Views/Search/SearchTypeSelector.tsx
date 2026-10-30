@@ -34,20 +34,37 @@ export default () => {
     global.app_event.searchTypeChanged(type)
   }
 
+  // 合并成一个按钮：只显示当前类型，点一下切到另一种
+  const other = type == 'music' ? 'songlist' : 'music'
+
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps={'always'} horizontal={true}>
-      {
-        list.map(t => (
-          <TouchableOpacity style={styles.button} onPress={() => { handleTypeChange(t.id) }} key={t.id}>
-            <Text style={{ ...styles.buttonText, borderBottomColor: type == t.id ? theme['c-primary-background-active'] : 'transparent' }} color={type == t.id ? theme['c-primary-font-active'] : theme['c-font']}>{t.label}</Text>
-          </TouchableOpacity>
-        ))
-      }
-    </ScrollView>
+    <TouchableOpacity
+      style={styles.single}
+      activeOpacity={0.7}
+      onPress={() => { handleTypeChange(other as SearchType) }}
+    >
+      <Text
+        size={13}
+        color={theme['c-primary-font-active']}
+        numberOfLines={1}
+        style={{ ...styles.singleText, borderBottomColor: theme['c-primary-background-active'] }}
+      >{t(`search_type_${type}`)}</Text>
+    </TouchableOpacity>
   )
 }
 
 const styles = createStyle({
+  single: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  singleText: {
+    borderBottomWidth: BorderWidths.normal3,
+    paddingHorizontal: 2,
+    paddingVertical: 3,
+  },
   container: {
     height: '100%',
     flexGrow: 0,
