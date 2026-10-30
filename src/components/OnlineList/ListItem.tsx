@@ -8,9 +8,25 @@ import { useI18n } from '@/lang'
 import { useTheme } from '@/store/theme/hook'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { LIST_ITEM_HEIGHT } from '@/config/constant'
+import { useFontSize } from '@/store/common/hook'
+import { setSpText } from '@/utils/pixelRatio'
 import { createStyle, type RowInfo } from '@/utils/tools'
 
 export const ITEM_HEIGHT = scaleSizeH(LIST_ITEM_HEIGHT)
+
+/**
+ * 行高（跟随字体大小）
+ *
+ * 之前是固定值，字号调到「大 / 更大 / 非常大」时，
+ * 歌名 + 歌手两行会超出行高、和上下行文字叠在一起（表盘小屏更明显）。
+ * 这里按当前字号算出两行所需高度，取「固定值」和「实际需要」中较大的一个。
+ */
+export const useItemHeight = () => {
+  const fontSize = useFontSize()
+  const nameH = Math.ceil(setSpText(15 * fontSize) * 1.45)
+  const subH = Math.ceil(setSpText(11 * fontSize) * 1.45)
+  return Math.max(ITEM_HEIGHT, nameH + subH + 8)
+}
 
 const useQualityTag = (musicInfo: LX.Music.MusicInfoOnline) => {
   const t = useI18n()
@@ -55,11 +71,12 @@ export default memo(({ item, index, showSource, onPress, onLongPress, onShowMenu
     }
   }
   const tagInfo = useQualityTag(item)
+  const itemHeight = useItemHeight()
 
   const singer = `${item.singer}${isShowAlbumName && item.meta.albumName ? ` · ${item.meta.albumName}` : ''}`
 
   return (
-    <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: ITEM_HEIGHT, backgroundColor: isSelected ? theme['c-primary-background-hover'] : 'rgba(0,0,0,0)' }}>
+    <View style={{ ...styles.listItem, width: rowInfo.rowWidth, height: itemHeight, backgroundColor: isSelected ? theme['c-primary-background-hover'] : 'rgba(0,0,0,0)' }}>
       <TouchableOpacity style={styles.listItemLeft} onPress={() => { onPress(item, index) }} onLongPress={() => { onLongPress(item, index) }}>
         <Text style={styles.sn} size={13} color={theme['c-300']}>{index + 1}</Text>
         <View style={styles.itemInfo}>

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'reac
 import { FlatList, type FlatListProps, RefreshControl, View } from 'react-native'
 
 // import { useMusicList } from '@/store/list/hook'
-import ListItem, { ITEM_HEIGHT } from './ListItem'
+import ListItem, { ITEM_HEIGHT, useItemHeight } from './ListItem'
 import { createStyle, getRowInfo, type RowInfoType } from '@/utils/tools'
 import type { Position } from './ListMenu'
 import type { SelectMode } from './MultipleModeBar'
@@ -195,8 +195,10 @@ const List = forwardRef<ListType, ListProps>(({
     />
   )
   const getkey: FlatListType['keyExtractor'] = item => item.id
+  // 行高要和 ListItem 里实际用的一致，否则滚动定位会错位
+  const itemHeight = useItemHeight()
   const getItemLayout: FlatListType['getItemLayout'] = (data, index) => {
-    return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }
+    return { length: itemHeight, offset: itemHeight * index, index }
   }
   const refreshControl = useMemo(() => (
     <RefreshControl
