@@ -58,7 +58,16 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
 
   return (
     <View
-      style={[styles.searchBar, { height: compact ? 70 : 38, flexWrap: compact ? 'wrap' : 'nowrap' }]}
+      style={[
+        styles.searchBar,
+        {
+          // 两行相加就是搜索栏高度：不留空档，结果列表才能紧贴搜索框
+          height: compact ? 58 : 38,
+          flexWrap: compact ? 'wrap' : 'nowrap',
+          // 不透明底色 + zIndex：搜索栏永远压在结果列表之上，列表滚动时不会从它下面透出来
+          backgroundColor: theme['c-content-background'],
+        },
+      ]}
       onLayout={(e) => { setBarWidth(e.nativeEvent.layout.width) }}
     >
       { compact
@@ -112,7 +121,8 @@ const styles = createStyle({
   searchBar: {
     flexDirection: 'row',
     height: 38,
-    zIndex: 2,
+    // 搜索栏是独立图层：结果列表与联想列表都必须在它下面
+    zIndex: 10,
     paddingRight: 10,
     // 底色与下方列表一致，去掉分隔横线（表盘上多一条线显得很杂）
   },
@@ -123,12 +133,14 @@ const styles = createStyle({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    height: 34,
+    // 与 Input 自身的 32 高度一致，上下不留空白
+    height: 32,
     paddingLeft: 6,
   },
   compactBottomRow: {
     width: '100%',
-    height: 34,
+    // 来源/类型行压到 26：紧贴搜索框，剩下的高度全部让给结果列表
+    height: 26,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

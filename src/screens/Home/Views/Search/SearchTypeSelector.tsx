@@ -56,14 +56,15 @@ export default () => {
 const styles = createStyle({
   single: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    // 上下不再撑高度：所在行只有 26 高，按钮必须贴着行高
+    paddingVertical: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   singleText: {
     // 不再画下划线，靠主题色区分当前类型
     paddingHorizontal: 2,
-    paddingVertical: 3,
+    paddingVertical: 1,
   },
   container: {
     height: '100%',
