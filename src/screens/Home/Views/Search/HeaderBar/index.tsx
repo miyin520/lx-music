@@ -1,4 +1,4 @@
-import { useRef, forwardRef, useImperativeHandle } from 'react'
+import { useRef, forwardRef, useImperativeHandle, useState } from 'react'
 import { View } from 'react-native'
 
 // import music from '@/utils/musicSdk'
@@ -38,6 +38,10 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
   const sourceSelectorRef = useRef<SourceSelectorType>(null)
   const searchInputRef = useRef<SearchInputType>(null)
   const theme = useTheme()
+  // 表盘上放不下「来源 + 输入框 + 类型」一行（320x320 的 Kido 尤其明显），
+  // 宽度不超过 360dp 就拆成两行：搜索框独占一行，来源与类型放第二行
+  const [barWidth, setBarWidth] = useState(0)
+  const compact = barWidth > 0 && barWidth <= 360
 
   useImperativeHandle(ref, () => ({
     setSourceList(list, source) {
@@ -53,21 +57,53 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
 
 
   return (
-    <View style={{ ...styles.searchBar, borderBottomColor: theme['c-border-background'] }}>
-      <View style={styles.selector}>
-        <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} center />
-      </View>
-      <SearchInput
-        ref={searchInputRef}
-        onChangeText={onTipSearch}
-        onSubmit={onSearch}
-        onBlur={onHideTipList}
-        onTouchStart={onShowTipList}
-      />
-      {/* 结果类型切换：歌曲 / 歌单（与歌单页的「最新/最热」同一交互） */}
-      <View style={styles.typeSwitch}>
-        <SearchTypeSelector />
-      </View>
+    <View
+      style={[styles.searchBar, { borderBottomColor: theme['c-border-background'], height: compact ? 70 : 38, flexWrap: compact ? 'wrap' : 'nowrap' }]}
+      onLayout={(e) => { setBarWidth(e.nativeEvent.layout.width) }}
+    >
+      { compact
+        ? (
+            <>
+              {/* 第一行：搜索框占满整行 */}
+              <View style={styles.compactInputRow}>
+                <SearchInput
+                  ref={searchInputRef}
+                  onChangeText={onTipSearch}
+                  onSubmit={onSearch}
+                  onBlur={onHideTipList}
+                  onTouchStart={onShowTipList}
+                />
+              </View>
+              {/* 第二行：来源 + 歌曲/歌单切换，各自靠边 */}
+              <View style={styles.compactBottomRow}>
+                <View style={styles.selector}>
+                  <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} center />
+                </View>
+                <View style={styles.typeSwitch}>
+                  <SearchTypeSelector />
+                </View>
+              </View>
+            </>
+          )
+        : (
+            <>
+              <View style={styles.selector}>
+                <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} center />
+              </View>
+              <SearchInput
+                ref={searchInputRef}
+                onChangeText={onTipSearch}
+                onSubmit={onSearch}
+                onBlur={onHideTipList}
+                onTouchStart={onShowTipList}
+              />
+              {/* 结果类型切换：歌曲 / 歌单 */}
+              <View style={styles.typeSwitch}>
+                <SearchTypeSelector />
+              </View>
+            </>
+          )
+      }
     </View>
   )
 })
@@ -82,6 +118,19 @@ const styles = createStyle({
   },
   selector: {
     // width: 86,
+  },
+  compactInputRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 34,
+  },
+  compactBottomRow: {
+    width: '100%',
+    height: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   typeSwitch: {
     maxWidth: 120,

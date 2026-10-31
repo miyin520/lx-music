@@ -134,7 +134,11 @@ const getFontScaleFactor = () => {
  */
 export function getTextSize(size: number) {
   if (!Number.isFinite(size)) return 12
-  const user = getFontScaleFactor()
+  let user = getFontScaleFactor()
+  // 320x320 这类极小的表盘上，字号一放大整行就会挤在一起，
+  // 这里把倍率上限压到 1.15（大字号仍然有变化，但不会把布局撑坏）
+  const shortSide = Math.min(screenW, screenH) / pixelRatio
+  if (shortSide <= 340 && user > 1.15) user = 1.15
   if (uiScale === 1) {
     // 手机：沿用原算法
     const sw = screenW / designWidth
