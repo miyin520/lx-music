@@ -47,7 +47,7 @@ export default () => {
         size={13}
         color={theme['c-primary-font-active']}
         numberOfLines={1}
-        style={{ ...styles.singleText, borderBottomColor: theme['c-primary-background-active'] }}
+        style={styles.singleText}
       >{t(`search_type_${type}`)}</Text>
     </TouchableOpacity>
   )
@@ -61,7 +61,7 @@ const styles = createStyle({
     justifyContent: 'center',
   },
   singleText: {
-    borderBottomWidth: BorderWidths.normal3,
+    // 不再画下划线，靠主题色区分当前类型
     paddingHorizontal: 2,
     paddingVertical: 3,
   },
@@ -91,7 +91,6 @@ const styles = createStyle({
     // paddingTop: 10,
     paddingTop: 3,
     paddingBottom: 3,
-    borderBottomWidth: BorderWidths.normal3,
     // width: 80,
   },
 })

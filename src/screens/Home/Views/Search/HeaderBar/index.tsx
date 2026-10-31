@@ -58,7 +58,7 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
 
   return (
     <View
-      style={[styles.searchBar, { borderBottomColor: theme['c-border-background'], height: compact ? 70 : 38, flexWrap: compact ? 'wrap' : 'nowrap' }]}
+      style={[styles.searchBar, { height: compact ? 70 : 38, flexWrap: compact ? 'wrap' : 'nowrap' }]}
       onLayout={(e) => { setBarWidth(e.nativeEvent.layout.width) }}
     >
       { compact
@@ -114,7 +114,7 @@ const styles = createStyle({
     height: 38,
     zIndex: 2,
     paddingRight: 10,
-    borderBottomWidth: BorderWidths.normal,
+    // 底色与下方列表一致，去掉分隔横线（表盘上多一条线显得很杂）
   },
   selector: {
     // width: 86,
