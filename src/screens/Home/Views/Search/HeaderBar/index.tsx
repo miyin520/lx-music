@@ -124,6 +124,7 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     height: 34,
+    paddingLeft: 6,
   },
   compactBottomRow: {
     width: '100%',
@@ -131,6 +132,9 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    // 给左边留点空隙，否则来源名第一个字会贴边被裁
+    paddingLeft: 8,
+    paddingRight: 4,
   },
   typeSwitch: {
     maxWidth: 120,

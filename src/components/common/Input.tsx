@@ -116,6 +116,8 @@ export default forwardRef<InputType, InputProps>(({ onChangeText, onClearText, c
         autoCapitalize="none"
         onChangeText={changeText}
         autoComplete="off"
+        // 空输入时隐藏光标：表盘上光标会和 placeholder 首字重叠，看着像一条被遮住的绿杠
+        caretHidden={isWatch() && !props.value}
         style={StyleSheet.compose({ ...styles.input, color: theme['c-font'], fontSize: setSpText(size) }, style)}
         placeholderTextColor={theme['c-primary-dark-100-alpha-600']}
         selectionColor={theme['c-primary-light-100-alpha-300']}
