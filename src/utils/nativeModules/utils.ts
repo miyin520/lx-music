@@ -4,6 +4,21 @@ const { UtilsModule } = NativeModules
 
 export const exitApp = UtilsModule.exitApp
 
+/**
+ * 屏幕圆角半径（dp，同步调用）。
+ * 读不到时返回 0（旧系统 / 方法不存在），由调用方按屏幕尺寸估算。
+ */
+export const getDisplayCornerRadius = (): number => {
+  try {
+    const fn = UtilsModule?.getDisplayCornerRadius as undefined | (() => number)
+    if (typeof fn != 'function') return 0
+    const r = Number(fn())
+    return Number.isFinite(r) && r > 0 ? r : 0
+  } catch (err) {
+    return 0
+  }
+}
+
 export const getSupportedAbis = UtilsModule.getSupportedAbis
 export const restartApp = UtilsModule.restartApp
 

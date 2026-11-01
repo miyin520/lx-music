@@ -55,7 +55,8 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
   //  - 大屏（手机/大表盘）上不会缩成中间一小团挤在一起，而是随槽位放大、上下均匀铺开；
   //  - 小屏上也不会让图标+文字撑出绿色遮罩，或被栏宽裁掉。
   const railCount = tabs.length + (showRailExit ? 1 : 0)
-  const railArea = Math.max(win.height - m.sysTop - m.sysBottom, 160)
+  // 上下各让出圆角安全边距：圆角很大的表盘上，最上/最下的图标会被屏幕圆角切掉
+  const railArea = Math.max(win.height - m.sysTop - m.sysBottom - m.cornerSafe * 2, 160)
   const railSlot = railArea / railCount
   const railBoxW = Math.max(Math.min(m.rail - 4, railSlot * 0.82), 30)
   const railIcon = Math.max(Math.min(railBoxW * 0.46, m.iconMd * 0.9), 14)
@@ -82,8 +83,11 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
       {/* 常驻导航栏 */}
       <View style={[styles.rail, {
         width: m.rail,
-        paddingTop: m.sysTop,
-        paddingBottom: m.sysBottom,
+        paddingTop: m.sysTop + m.cornerSafe,
+        paddingBottom: m.sysBottom + m.cornerSafe,
+        // 弧形边也往里收一点，图标不会压在屏幕边缘的圆角弧上
+        paddingLeft: Math.min(m.cornerSafe * 0.6, 8),
+        paddingRight: Math.min(m.cornerSafe * 0.6, 8),
       }]}>
         {
           tabs.map(({ id, icon, label }) => {
@@ -130,10 +134,11 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
 
       {/* 内容区（左右留白避开圆角） */}
       <View style={[styles.content, {
-        paddingTop: m.insetTop,
-        paddingBottom: m.insetBottom,
-        paddingLeft: m.side * 0.4,
-        paddingRight: m.side * 0.7,
+        // 圆角屏：内容区四角必须避开圆角的弧，否则搜索框第一行、标题会被切掉半截
+        paddingTop: m.insetTop + m.cornerSafe * 0.75,
+        paddingBottom: m.insetBottom + m.cornerSafe * 0.75,
+        paddingLeft: Math.max(m.side * 0.4, m.cornerSafe * 0.6),
+        paddingRight: Math.max(m.side * 0.7, m.cornerSafe * 0.6),
       }]}>
         {content}
       </View>

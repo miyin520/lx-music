@@ -102,6 +102,50 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     reactContext.registerReceiver(screenOnOffReceiver, theFilter);
   }
 
+  /**
+   * 屏幕圆角半径（dp）。
+   *
+   * 有的表盘四角非常圆（R 能到短边的 1/4），界面靠边的内容会被圆角切掉：
+   * 「Search for something…」的左半个字、侧边栏最上和最下的图标文字都会缺一块。
+   * Android 12（API 31）起可以精确读到圆角半径，这里同步返回，JS 侧在算布局时直接用。
+   * 读不到（旧系统 / 部分 ROM）返回 0，交给 JS 按屏幕短边估算。
+   */
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public double getDisplayCornerRadius() {
+    try {
+      Activity activity = reactContext.getCurrentActivity();
+      android.view.Display display;
+      if (activity != null) {
+        display = activity.getWindowManager().getDefaultDisplay();
+      } else {
+        WindowManager wm = (WindowManager) reactContext.getSystemService(Context.WINDOW_SERVICE);
+        if (wm == null) return 0;
+        display = wm.getDefaultDisplay();
+      }
+      if (display == null) return 0;
+      double px = 0;
+      // 用反射调用：Display#getRoundedCorner 是 API 31 才有的，直接引用在低 compileSdk 下编不过
+      try {
+        java.lang.reflect.Method getCorner = android.view.Display.class.getMethod("getRoundedCorner", int.class);
+        for (int i = 0; i <= 3; i++) {
+          try {
+            Object corner = getCorner.invoke(display, i);
+            if (corner == null) continue;
+            Object radius = corner.getClass().getMethod("getRadius").invoke(corner);
+            if (radius instanceof Number) px = Math.max(px, ((Number) radius).doubleValue());
+          } catch (Throwable ignored) {
+          }
+        }
+      } catch (Throwable ignored) {
+      }
+      float density = reactContext.getResources().getDisplayMetrics().density;
+      if (density <= 0) density = 1;
+      return px / density;
+    } catch (Throwable e) {
+      return 0;
+    }
+  }
+
   @ReactMethod
   public void exitApp() {
     // https://github.com/wumke/react-native-exit-app/blob/master/android/src/main/java/com/github/wumke/RNExitApp/RNExitAppModule.java

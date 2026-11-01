@@ -1,7 +1,7 @@
 {
   "name": "lx-music-watch",
-  "version": "3.2.0",
-  "versionCode": 3250,
+  "version": "3.2.1",
+  "versionCode": 3260,
   "private": true,
   "scripts": {
     "dev": "react-native run-android --active-arch-only",

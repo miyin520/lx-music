@@ -7,6 +7,7 @@
  * 所以不能写死，必须读系统值，并留一点安全余量。
  */
 import { Dimensions, StatusBar } from 'react-native'
+import { getDisplayCornerRadius } from '@/utils/nativeModules/utils'
 
 export interface SystemInsets {
   top: number
@@ -39,3 +40,18 @@ export const getSystemInsets = (): SystemInsets => ({
   top: getStatusBarHeight(),
   bottom: getBottomInset(),
 })
+
+
+/**
+ * 屏幕圆角半径（dp），0 表示读不到。
+ *
+ * 有的表盘四角非常圆（半径能到短边的四分之一），靠边的内容会被圆角切掉。
+ * Android 12+ 能从系统读到精确值；读不到返回 0，由 metrics 按短边估算。
+ * 只在首次调用时过一次桥，之后走缓存。
+ */
+let _cornerRadius: number | null = null
+export const getCornerRadius = (): number => {
+  if (_cornerRadius != null) return _cornerRadius
+  _cornerRadius = getDisplayCornerRadius()
+  return _cornerRadius
+}

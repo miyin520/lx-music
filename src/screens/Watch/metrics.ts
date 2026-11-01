@@ -1,6 +1,6 @@
 import { Dimensions, PixelRatio } from 'react-native'
 import { temporaryDirectoryPath, writeFile } from '@/utils/fs'
-import { getSystemInsets } from './insets'
+import { getSystemInsets, getCornerRadius } from './insets'
 import { getTextSize } from '@/utils/pixelRatio'
 
 /**
@@ -51,6 +51,10 @@ export interface WatchMetrics {
   sysTop: number
   /** 纯系统底部手势条高度（不含用户留白） */
   sysBottom: number
+  /** 屏幕圆角半径（dp） */
+  corner: number
+  /** 圆角安全边距：保证矩形内容不进入圆角弧内（dp） */
+  cornerSafe: number
   /** 系统状态栏高度（dp），0 = 无状态栏；第三方 ROM 上通常 > 0 */
   insetTop: number
   /** 底部手势条/导航栏高度（dp） */
@@ -73,6 +77,12 @@ export const makeMetrics = (width: number, height: number, userInset = 0): Watch
   const extraInset = Math.min(rawInset, Math.max(maxInsetEach, 0))
   const h = Math.max(rawH - insets.top - insets.bottom - extraInset * 2, 120)
   const short = Math.min(w, h)
+  // 圆角：先问系统（Android 12+ 有精确值），拿不到按短边估算并设上限。
+  // 估算取值偏保守 —— 圆角屏上宁可多留一点边，也别让字被切掉半截。
+  const nativeCorner = getCornerRadius()
+  const corner = nativeCorner > 0 ? nativeCorner : Math.min(short * 0.2, 40)
+  // 矩形内容不进入半径 R 的圆角所需的最小边距 = R(1 - 1/√2) ≈ 0.293R，再留 3dp 余量
+  const cornerSafe = corner * 0.3 + 3
   // 字号随短边走，但夹在 10~17，避免高密度屏上字大得离谱
   const fs = clamp(short * 0.036, 10, 17)
   // 实际渲染出来的主字号（已包含用户的「字体大小」设置）。
@@ -87,6 +97,8 @@ export const makeMetrics = (width: number, height: number, userInset = 0): Watch
     width: w,
     height: h,
     short,
+    corner,
+    cornerSafe,
     header,
     player,
     // 行内含两行文字（歌名+歌手），按实际行高预留

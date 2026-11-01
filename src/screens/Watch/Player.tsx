@@ -208,7 +208,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
     <WatchBackground>
     <View style={[
       styles.container,
-      { paddingTop: m.insetTop, paddingBottom: m.insetBottom },
+      { paddingTop: m.insetTop + m.cornerSafe * 0.6, paddingBottom: m.insetBottom + m.cornerSafe * 0.6 },
     ]}>
       {/* 顶栏 */}
       <View style={[styles.header, { height: m.header, paddingHorizontal: m.side }]}>
