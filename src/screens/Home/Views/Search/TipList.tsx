@@ -1,15 +1,25 @@
 import { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react'
+import { View } from 'react-native'
 import SearchTipList, { type SearchTipListProps as _SearchTipListProps, type SearchTipListType as _SearchTipListType } from '@/components/SearchTipList'
 import Button from '@/components/common/Button'
-import { createStyle } from '@/utils/tools'
 import Text from '@/components/common/Text'
-import { scaleSizeH } from '@/utils/pixelRatio'
+import { Icon } from '@/components/common/Icon'
+import { useTheme } from '@/store/theme/hook'
+import { createStyle } from '@/utils/tools'
+import { scaleSizeH, setSpText } from '@/utils/pixelRatio'
+import { isWatch } from '@/utils/watchMode'
 import musicSdk from '@/utils/musicSdk'
 import searchState, { type InitState as SearchState } from '@/store/search/state'
 import { setSearchText, setTipList, setTipListInfo } from '@/core/search/search'
 import { debounce } from '@/utils'
 
-export const ITEM_HEIGHT = scaleSizeH(36)
+/** 一行联想词的高度：表盘上要按得着，至少 40dp */
+export const ITEM_HEIGHT = isWatch()
+  ? Math.max(Math.round(setSpText(14) * 2.6), 40)
+  : scaleSizeH(36)
+
+/** 联想词最多显示多少条：再多也点不过来，超过就让列表自己滚 */
+const MAX_TIP = 20
 
 export const debounceTipSearch = debounce((keyword: string, source: SearchState['temp_source'], callback: (list: string[]) => void) => {
   // console.log(reslutList)
@@ -30,7 +40,10 @@ export interface TipListType {
 }
 
 export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
+  const theme = useTheme()
   const searchTipListRef = useRef<SearchTipListType>(null)
+  // 当前关键词：渲染时用来把命中的那几个字标成主题色
+  const keywordRef = useRef('')
   const [visible, setVisible] = useState(false)
   const visibleListRef = useRef(false)
   const isUnmountedRef = useRef(false)
@@ -42,6 +55,15 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
     }
   }, [])
 
+  const applyList = (keyword: string, list: string[]) => {
+    keywordRef.current = keyword
+    // 去重 + 截断：联想接口偶尔会重复给同一条，重复的 key 会让列表渲染错位
+    const clean = Array.from(new Set(list.filter(Boolean))).slice(0, MAX_TIP)
+    setTipList(clean)
+    if (!visibleListRef.current || isUnmountedRef.current) return
+    searchTipListRef.current?.setList(clean)
+  }
+
   const handleSearch = (keyword: string, height: number) => {
     searchTipListRef.current?.setHeight(height)
     setSearchText(keyword)
@@ -49,14 +71,11 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
       setTipListInfo(keyword, searchState.temp_source)
       debounceTipSearch(keyword, searchState.temp_source, (list) => {
         if (keyword != searchState.tipListInfo.text) return
-        setTipList(list)
-        if (!visibleListRef.current || isUnmountedRef.current) return
-        searchTipListRef.current?.setList(list)
+        applyList(keyword, list)
       })
     } else {
       setTipListInfo(keyword, searchState.temp_source)
-      setTipList([])
-      searchTipListRef.current?.setList([])
+      applyList(keyword, [])
     }
   }
 
@@ -64,7 +83,8 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
     searchTipListRef.current?.setHeight(height)
     if (searchState.tipListInfo.list.length) {
       visibleListRef.current = true
-      searchTipListRef.current?.setList([...searchState.tipListInfo.list])
+      keywordRef.current = searchState.tipListInfo.text
+      searchTipListRef.current?.setList(Array.from(new Set(searchState.tipListInfo.list.filter(Boolean))).slice(0, MAX_TIP))
     }
   }
 
@@ -96,14 +116,29 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
     },
   }), [visible])
 
-  const renderItem: SearchTipListProps['renderItem'] = ({ item, index }) => {
+  // 把联想词里命中关键词的部分标成主题色，一眼能看出"为什么给我这条"
+  const renderLabel = (text: string) => {
+    const keyword = keywordRef.current.trim()
+    const index = keyword ? text.toLowerCase().indexOf(keyword.toLowerCase()) : -1
+    if (index < 0) return <Text numberOfLines={1} size={isWatch() ? 14 : 15}>{text}</Text>
     return (
-      <Button style={styles.item} onPress={() => { onSearch(item) }} key={index}>
-        <Text numberOfLines={1}>{item}</Text>
+      <Text numberOfLines={1} size={isWatch() ? 14 : 15}>
+        {text.slice(0, index)}
+        <Text numberOfLines={1} size={isWatch() ? 14 : 15} color={theme['c-primary']}>{text.slice(index, index + keyword.length)}</Text>
+        {text.slice(index + keyword.length)}
+      </Text>
+    )
+  }
+
+  const renderItem: SearchTipListProps['renderItem'] = ({ item }) => {
+    return (
+      <Button style={styles.item} onPress={() => { onSearch(item) }} key={item}>
+        <Icon name="search-2" size={isWatch() ? 14 : 11} color={theme['c-400']} style={styles.itemIcon} />
+        {renderLabel(item)}
       </Button>
     )
   }
-  const getkey: SearchTipListProps['keyExtractor'] = (item, index) => String(index)
+  const getkey: SearchTipListProps['keyExtractor'] = (item) => item
   const getItemLayout: SearchTipListProps['getItemLayout'] = (data, index) => {
     return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }
   }
@@ -127,9 +162,10 @@ const styles = createStyle({
     height: ITEM_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 15,
-    paddingRight: 15,
-    // backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    paddingLeft: isWatch() ? 14 : 15,
+    paddingRight: isWatch() ? 10 : 15,
+  },
+  itemIcon: {
+    marginRight: isWatch() ? 10 : 6,
   },
 })
-

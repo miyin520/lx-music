@@ -23,6 +23,7 @@ import Setting from '@/screens/Home/Views/Setting'
 import WatchSettings from './Settings'
 import WatchList from './List'
 import { makeMetrics } from './metrics'
+import { setSpText } from '@/utils/pixelRatio'
 import { exitApp } from '@/utils/nativeModules/utils'
 import WatchBackground from './WatchBackground'
 
@@ -48,6 +49,19 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
     { id: 'top', icon: 'leaderboard', label: t('nav_top') },
     { id: 'setting', icon: 'setting', label: t('nav_setting') },
   ], [t])
+
+  // ── 导航栏尺寸 ──
+  // 方块边长同时受「栏宽」和「每个槽位的高度」约束：
+  //  - 大屏（手机/大表盘）上不会缩成中间一小团挤在一起，而是随槽位放大、上下均匀铺开；
+  //  - 小屏上也不会让图标+文字撑出绿色遮罩，或被栏宽裁掉。
+  const railCount = tabs.length + (showRailExit ? 1 : 0)
+  const railArea = Math.max(win.height - m.sysTop - m.sysBottom, 160)
+  const railSlot = railArea / railCount
+  const railBoxW = Math.max(Math.min(m.rail - 4, railSlot * 0.82), 30)
+  const railIcon = Math.max(Math.min(railBoxW * 0.46, m.iconMd * 0.9), 14)
+  const railFont = Math.max(Math.min(railBoxW * 0.2, m.fontSm * 0.92), 8)
+  // 高度按内容兜底：文字被用户调大时，遮罩跟着变高，不会"上下露出一截"
+  const railBoxH = Math.max(railBoxW, railIcon + setSpText(railFont) * 1.35 + 8)
 
   const content = useMemo(() => {
     // 我的列表：表盘专属界面，直接用
@@ -79,19 +93,19 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
                 key={id}
                 style={[
                   styles.railItem,
-                  // 绿色遮罩做成正方形：宽 = 高 = 导航栏内宽
-                  { width: (m.rail - 8) * 0.92, height: (m.rail - 8) * 0.92 },
+                  // 绿色遮罩包住图标和文字（高度按内容兜底）
+                  { width: railBoxW, height: railBoxH },
                   active && { backgroundColor: theme['c-primary-background-hover'] },
                 ]}
                 activeOpacity={0.6}
                 onPress={() => { setTab(id) }}
               >
-                <Icon name={icon} size={m.iconMd * 0.9} color={active ? theme['c-primary'] : theme['c-500']} />
+                <Icon name={icon} size={railIcon} color={active ? theme['c-primary'] : theme['c-500']} />
                 <Text
-                  size={m.fontSm * 0.92}
+                  size={railFont}
                   color={active ? theme['c-primary'] : theme['c-500']}
                   numberOfLines={1}
-                  style={{ marginTop: 1 }}
+                  style={{ marginTop: 1, width: railBoxW - 4, textAlign: 'center' }}
                 >{label}</Text>
               </TouchableOpacity>
             )
@@ -102,12 +116,12 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
               // 退出：紧跟在导航项后面；点击完全结束应用（进程一并结束，播放也随之停止）
               <View>
                 <TouchableOpacity
-                  style={[styles.railItem, { width: (m.rail - 8) * 0.92, height: (m.rail - 8) * 0.92 }]}
+                  style={[styles.railItem, { width: railBoxW, height: railBoxH }]}
                   activeOpacity={0.6}
                   onPress={() => { exitApp() }}
                 >
-                  <Icon name="exit" size={m.iconMd * 0.9} color={theme['c-500']} />
-                  <Text size={m.fontSm * 0.92} color={theme['c-500']} numberOfLines={1} style={{ marginTop: 1 }}>退出</Text>
+                  <Icon name="exit" size={railIcon} color={theme['c-500']} />
+                  <Text size={railFont} color={theme['c-500']} numberOfLines={1} style={{ marginTop: 1, width: railBoxW - 4, textAlign: 'center' }}>退出</Text>
                 </TouchableOpacity>
               </View>
             )
@@ -146,14 +160,16 @@ const styles = createStyle({
   },
   rail: {
     flexShrink: 0,
-    justifyContent: 'center',
+    // 关键：按可用高度均匀铺开，而不是全挤在中间一小团
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
   },
   railItem: {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
     alignSelf: 'center',
-    marginTop: 6,
+    overflow: 'hidden',
   },
   railSpacer: {
     flex: 1,
