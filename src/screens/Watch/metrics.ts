@@ -63,7 +63,7 @@ export interface WatchMetrics {
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
 
-export const makeMetrics = (width: number, height: number, userInset = 0): WatchMetrics => {
+export const makeMetrics = (width: number, height: number, userInset = 0, userCorner = -1): WatchMetrics => {
   const insets = getSystemInsets()
   // 用户在设置里调的「上下留白」也要算进来（表盘界面不经过 PageContent，
   // 所以之前这个设置对表盘是失效的）
@@ -79,10 +79,16 @@ export const makeMetrics = (width: number, height: number, userInset = 0): Watch
   const short = Math.min(w, h)
   // 圆角：先问系统（Android 12+ 有精确值），拿不到按短边估算并设上限。
   // 估算取值偏保守 —— 圆角屏上宁可多留一点边，也别让字被切掉半截。
+  // 优先级：用户手选 > 系统读取（Android 12+）> 按短边估算。
+  // 大部分手表还在 Android 12 以下读不到真实值，所以设置里给了手动档。
   const nativeCorner = getCornerRadius()
-  const corner = nativeCorner > 0 ? nativeCorner : Math.min(short * 0.2, 40)
-  // 矩形内容不进入半径 R 的圆角所需的最小边距 = R(1 - 1/√2) ≈ 0.293R，再留 3dp 余量
-  const cornerSafe = corner * 0.3 + 3
+  const manualCorner = Number.isFinite(userCorner) ? userCorner : -1
+  const corner = manualCorner >= 0
+    ? manualCorner
+    : (nativeCorner > 0 ? nativeCorner : Math.min(short * 0.2, 40))
+  // 矩形内容不进入半径 R 的圆角所需的最小边距 = R(1 - 1/√2) ≈ 0.293R，再留 3dp 余量；
+  // 用户明确选了「0 = 方角」时不做任何避让
+  const cornerSafe = corner > 0 ? corner * 0.3 + 3 : 0
   // 字号随短边走，但夹在 10~17，避免高密度屏上字大得离谱
   const fs = clamp(short * 0.036, 10, 17)
   // 实际渲染出来的主字号（已包含用户的「字体大小」设置）。

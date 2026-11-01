@@ -82,6 +82,11 @@ declare global {
       'common.watchScreenInset': number
 
       /**
+       * 表盘圆角半径（dp），-1 = 自动（读系统值，读不到按屏幕尺寸估算）
+       */
+      'common.watchCornerRadius': number
+
+      /**
        * 界面形态：自动识别 / 手机版 / 手表版
        */
 

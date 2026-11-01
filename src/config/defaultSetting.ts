@@ -18,6 +18,8 @@ const defaultSetting: LX.AppSetting = {
   'common.alwaysKeepStatusbarHeight': false,
   // 圆角屏（手表）四周留白，0 = 关闭
   'common.watchScreenInset': 0,
+  // 表盘圆角半径（dp）：-1 = 自动（读系统值，读不到按屏幕尺寸估算）
+  'common.watchCornerRadius': -1,
   // 界面形态：auto = 按屏幕尺寸自动识别；phone / watch = 用户手动指定
   'common.watchRailSide': 'left',
   'common.watchRailExit': true,
