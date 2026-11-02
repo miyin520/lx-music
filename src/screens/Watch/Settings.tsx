@@ -69,10 +69,9 @@ export default memo(() => {
   const theme = useTheme()
   const t = useI18n()
   const win = useWindowSize()
-  const userInset = useSettingValue('common.watchScreenInset')
   const userCorner = useSettingValue('common.watchCornerRadius')
   const fontSize = useFontSize()
-  const m = useMemo(() => makeMetrics(win.width, win.height, userInset, userCorner), [win.width, win.height, userInset, userCorner, fontSize])
+  const m = useMemo(() => makeMetrics(win.width, win.height, userCorner), [win.width, win.height, userCorner, fontSize])
   const [active, setActive] = useState<SettingScreenIds | null>(null)
 
   // 进入子分组后，返回键应该先回到方块页

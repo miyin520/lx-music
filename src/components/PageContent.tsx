@@ -8,7 +8,6 @@ import { scaleSizeAbsHR } from '@/utils/pixelRatio'
 import { defaultHeaders } from './common/Image'
 import SizeView from './SizeView'
 import { useBgPic } from '@/store/common/hook'
-import { useSettingValue } from '@/store/setting/hook'
 
 interface Props {
   children: React.ReactNode
@@ -20,22 +19,17 @@ export default ({ children }: Props) => {
   const theme = useTheme()
   const windowSize = useWindowSize()
   const pic = useBgPic()
-  // 圆角屏（手表）：只做上下留白，避免顶栏/底栏被屏幕圆角切掉。
-  // 左右不加内边距——留白会把界面挤出一条空边，列表反而不整齐。
-  const watchScreenInset = useSettingValue('common.watchScreenInset')
-  const inset = watchScreenInset || 0
-  const contentStyle = useMemo(() => inset > 0
-    ? { flex: 1, flexDirection: 'column' as const, paddingTop: inset, paddingBottom: inset }
-    : { flex: 1, flexDirection: 'column' as const }, [inset])
-  // 上下留白后背景要往外扩，否则边上露出空白
+  // 页面内容容器。原来的「上下留白」设置已删除（圆角避让改由表盘 metrics 统一处理），
+  // 这里固定不留内边距 —— 老用户存过的 36dp 也不会再生效。
+  const contentStyle = useMemo(() => ({ flex: 1, flexDirection: 'column' as const }), [])
   const bgStyle = useMemo(() => ({
     position: 'absolute' as const,
     left: 0,
-    top: -inset,
-    height: windowSize.height + inset * 2,
+    top: 0,
+    height: windowSize.height,
     width: windowSize.width,
     backgroundColor: theme['c-content-background'],
-  }), [inset, theme, windowSize.height, windowSize.width])
+  }), [theme, windowSize.height, windowSize.width])
   // const [wh, setWH] = useState<{ width: number | string, height: number | string }>({ width: '100%', height: Dimensions.get('screen').height })
 
   // 固定宽高度 防止弹窗键盘时大小改变导致背景被缩放

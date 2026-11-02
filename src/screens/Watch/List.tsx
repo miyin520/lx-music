@@ -90,11 +90,10 @@ const SongRow = memo(({ item, index, realIndex, active, isPlay, theme, m, onPlay
 const WatchList = memo(({ componentId }: { componentId: string }) => {
   const theme = useTheme()
   const win = useWindowSize()
-  const userInset = useSettingValue('common.watchScreenInset')
   const userCorner = useSettingValue('common.watchCornerRadius')
   const fontSize = useFontSize()
   // fontSize 进依赖：改字体大小时重新算行高/高度，避免文字被裁
-  const m = useMemo(() => makeMetrics(win.width, win.height, userInset, userCorner), [win.width, win.height, userInset, userCorner, fontSize])
+  const m = useMemo(() => makeMetrics(win.width, win.height, userCorner), [win.width, win.height, userCorner, fontSize])
 
   const lists = useMyList()
   const activeListId = useActiveListId()

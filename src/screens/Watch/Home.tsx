@@ -31,13 +31,12 @@ type TabId = 'mine' | 'search' | 'songlist' | 'top' | 'setting'
 
 const WatchHome = memo(({ componentId }: { componentId: string }) => {
   const win = useWindowSize()
-  const userInset = useSettingValue('common.watchScreenInset')
   const userCorner = useSettingValue('common.watchCornerRadius')
   const railSide = useSettingValue('common.watchRailSide')
   const showRailExit = useSettingValue('common.watchRailExit')
   const fontSize = useFontSize()
   // fontSize 进依赖：改字体大小时重新算行高/高度，避免文字被裁
-  const m = useMemo(() => makeMetrics(win.width, win.height, userInset, userCorner), [win.width, win.height, userInset, userCorner, fontSize])
+  const m = useMemo(() => makeMetrics(win.width, win.height, userCorner), [win.width, win.height, userCorner, fontSize])
 
   const theme = useTheme()
   const t = useI18n()

@@ -63,19 +63,13 @@ export interface WatchMetrics {
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
 
-export const makeMetrics = (width: number, height: number, userInset = 0, userCorner = -1): WatchMetrics => {
+export const makeMetrics = (width: number, height: number, userCorner = -1): WatchMetrics => {
   const insets = getSystemInsets()
-  // 用户在设置里调的「上下留白」也要算进来（表盘界面不经过 PageContent，
-  // 所以之前这个设置对表盘是失效的）
-  // 用户留白要钳制：字体调大 + 留白调大时，若原样叠加会把内容区挤到没有，
-  // 表现为"设置跑到屏幕外"。上限取高度的 8%，并保证内容区至少剩 55%。
-  // 可用内容高度要扣掉系统栏，否则第三方 ROM 上顶栏会被状态栏压住
+  // 可用内容高度扣掉系统栏，否则第三方 ROM 上顶栏会被状态栏压住。
+  // （「上下留白」设置已删除：圆角避让由 cornerSafe 统一处理）
   const w = width > 0 ? width : 320
   const rawH = height > 0 ? height : 320
-  const rawInset = Number.isFinite(userInset) && userInset > 0 ? userInset : 0
-  const maxInsetEach = Math.max(0, Math.min(rawH * 0.08, (rawH * 0.45 - insets.top - insets.bottom) / 2))
-  const extraInset = Math.min(rawInset, Math.max(maxInsetEach, 0))
-  const h = Math.max(rawH - insets.top - insets.bottom - extraInset * 2, 120)
+  const h = Math.max(rawH - insets.top - insets.bottom, 120)
   const short = Math.min(w, h)
   // 圆角：先问系统（Android 12+ 有精确值），拿不到按短边估算并设上限。
   // 估算取值偏保守 —— 圆角屏上宁可多留一点边，也别让字被切掉半截。
@@ -144,8 +138,8 @@ export const makeMetrics = (width: number, height: number, userInset = 0, userCo
     btnLg: clamp(short * 0.19, 48, w * 0.24),
     sysTop: insets.top,
     sysBottom: insets.bottom,
-    insetTop: insets.top + extraInset,
-    insetBottom: insets.bottom + extraInset,
+    insetTop: insets.top,
+    insetBottom: insets.bottom,
   }
 }
 
