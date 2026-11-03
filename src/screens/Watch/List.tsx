@@ -5,7 +5,7 @@
  * 顶部窄条（列表名 + 菜单）/ 中间歌曲列表 / 底部迷你播放条。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { View, Animated, FlatList, Pressable, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
+import { View, Animated, FlatList, Modal, Pressable, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
 
 import Text from '@/components/common/Text'
 import Input from '@/components/common/Input'
@@ -513,14 +513,19 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
           : null}
       </View>
 
-      {/* 列表选择层：居中圆角卡片（和 ⋮ / 长按菜单同款）+ 右下角关闭按钮 */}
-      {
-        showListPicker
-          ? <Pressable
-              style={[styles.pickerMask, { zIndex: 1000, elevation: 1000 }]}
-              // 点空白处直接关闭，而不是穿过去点到下面的歌曲
-              onPress={() => { setShowListPicker(false) }}
-            >
+      {/* 列表选择层：整屏（含侧边栏）的透明弹层，点弹窗外面任何地方都退出 */}
+      <Modal
+        visible={showListPicker}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => { setShowListPicker(false) }}
+      >
+        <Pressable
+          style={styles.pickerMask}
+          // 点弹窗外面（包括侧边栏区域）直接关闭，而不是穿过去点到下面的控件
+          onPress={() => { setShowListPicker(false) }}
+        >
               <Pressable
                 onPress={(e) => { e.stopPropagation?.() }}
                 style={{
@@ -593,9 +598,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
                   </TouchableOpacity>
                 </View>
               </Pressable>
-            </Pressable>
-          : null
-      }
+        </Pressable>
+      </Modal>
 
       {/* 原版歌曲菜单及其依赖 */}
       <MusicListMenu
