@@ -5,7 +5,7 @@
  * 顶部窄条（列表名 + 菜单）/ 中间歌曲列表 / 底部迷你播放条。
  */
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { View, Animated, FlatList, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
+import { View, Animated, FlatList, Pressable, ScrollView, TouchableOpacity, PanResponder } from 'react-native'
 
 import Text from '@/components/common/Text'
 import Input from '@/components/common/Input'
@@ -368,7 +368,9 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
                   value={keyword}
                   onChangeText={setKeyword}
                   placeholder="搜索歌曲"
-                  clearBtn
+                  // 不再给输入框自带清除按钮：顶部已经有一个「关闭搜索」的叉，
+                  // 两个叉挨在一起容易点错（用户反馈）
+                  clearBtn={false}
                   style={{ fontSize: m.fontMd }}
                   autoFocus
                 />
@@ -514,8 +516,13 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
       {/* 列表选择层：居中圆角卡片（和 ⋮ / 长按菜单同款）+ 右下角关闭按钮 */}
       {
         showListPicker
-          ? <View style={styles.pickerMask} pointerEvents="box-none">
-              <View
+          ? <Pressable
+              style={[styles.pickerMask, { zIndex: 1000, elevation: 1000 }]}
+              // 点空白处直接关闭，而不是穿过去点到下面的歌曲
+              onPress={() => { setShowListPicker(false) }}
+            >
+              <Pressable
+                onPress={(e) => { e.stopPropagation?.() }}
                 style={{
                   position: 'absolute',
                   top: m.insetTop + m.header,
@@ -525,7 +532,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
                   borderRadius: 16,
                   borderWidth: 1,
                   borderColor: theme['c-border-background'],
-                  backgroundColor: theme['c-content-background'],
+                  // 卡片必须不透明：主题内容底色带透明度时，下面的歌单会透出来
+                  backgroundColor: theme['c-main-background'],
                   overflow: 'hidden',
                 }}
               >
@@ -584,8 +592,8 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
                     <Text size={14} color="#FFFFFF">关闭</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            </View>
+              </Pressable>
+            </Pressable>
           : null
       }
 
@@ -651,6 +659,8 @@ const styles = createStyle({
     right: 0,
     top: 0,
     bottom: 0,
+    // 压暗背景，顺便挡住下面的列表 / 迷你播放条
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   pickerFull: {
     position: 'absolute',
