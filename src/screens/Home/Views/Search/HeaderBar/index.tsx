@@ -75,9 +75,6 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
           // 比「歌曲」大一号，会顶出第二行、压在联想卡片上，看着就不衔接
           height: barH,
           flexWrap: 'wrap',
-          // 左右各留 12dp：搜索框从屏幕边缘移到中间，圆角表盘上也不会被边角切到
-          paddingLeft: 12,
-          paddingRight: 12,
           // 不透明底色 + zIndex：搜索栏永远压在结果列表之上，列表滚动时不会从它下面透出来
           backgroundColor: theme['c-content-background'],
           borderTopLeftRadius: 10,
@@ -123,7 +120,6 @@ const styles = createStyle({
     height: 38,
     // 搜索栏是独立图层：结果列表与联想列表都必须在它下面
     zIndex: 10,
-    paddingRight: 10,
     // 底色与下方列表一致，去掉分隔横线（表盘上多一条线显得很杂）
   },
   selector: {
