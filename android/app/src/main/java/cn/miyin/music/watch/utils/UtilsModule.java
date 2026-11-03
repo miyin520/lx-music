@@ -110,15 +110,24 @@ public class UtilsModule extends ReactContextBaseJavaModule {
    * 新 API（WindowInsetsController）在部分老 ROM 上反而没有实现。
    * IMMERSIVE_STICKY 保证用户从边缘划出后过一会儿自动隐藏。
    */
-  @ReactMethod
-  public void setFullscreen(final boolean enabled) {
-    final Activity activity = reactContext.getCurrentActivity();
+  /** 全面屏开关的当前状态，供窗口重新获得焦点时恢复 */
+  private static boolean fullscreenEnabled = false;
+
+  /**
+   * 按当前开关状态重设系统栏。
+   * 供 setFullscreen 调用，也供 MainActivity#onWindowFocusChanged 调用 ——
+   * 部分 ROM（尤其是带手势条的）在窗口焦点变化时会把系统栏放回来，只设一次是不够的。
+   */
+  public static void applyFullscreen(final Activity activity) {
     if (activity == null) return;
+    final boolean enabled = fullscreenEnabled;
     activity.runOnUiThread(() -> {
       try {
         Window window = activity.getWindow();
         View decor = window.getDecorView();
         if (enabled) {
+          // FLAG_FULLSCREEN 对老系统/部分 ROM 是必需的一步
+          window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
           decor.setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE
               | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -128,11 +137,23 @@ public class UtilsModule extends ReactContextBaseJavaModule {
               | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
           );
         } else {
+          window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
           decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
       } catch (Throwable ignored) {
       }
     });
+  }
+
+  @ReactMethod
+  public void setFullscreen(final boolean enabled) {
+    fullscreenEnabled = enabled;
+    applyFullscreen(reactContext.getCurrentActivity());
+    if (enabled) {
+      // 有些 ROM 会延迟几百毫秒再把栏放回来，补一次
+      final Activity activity = reactContext.getCurrentActivity();
+      new Handler(Looper.getMainLooper()).postDelayed(() -> applyFullscreen(activity), 600);
+    }
   }
 
   /**

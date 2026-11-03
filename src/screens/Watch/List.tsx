@@ -659,8 +659,8 @@ const styles = createStyle({
     right: 0,
     top: 0,
     bottom: 0,
-    // 压暗背景，顺便挡住下面的列表 / 迷你播放条
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    // 不加压暗色：要的是「点空白关闭」，不是视觉上的灰罩
+    backgroundColor: 'transparent',
   },
   pickerFull: {
     position: 'absolute',

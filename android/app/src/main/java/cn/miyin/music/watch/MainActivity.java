@@ -15,6 +15,13 @@ public class MainActivity extends NavigationActivity {
   }
 
   @Override
+  public void onWindowFocusChanged(boolean hasFocus) {
+    super.onWindowFocusChanged(hasFocus);
+    // 全面屏开启时，每次重新获得焦点都补一次（系统可能会把状态栏/手势条放回来）
+    if (hasFocus) cn.miyin.music.watch.utils.UtilsModule.applyFullscreen(this);
+  }
+
+  @Override
   protected void onResume() {
     super.onResume();
     NativeBootLog.log(this, "MainActivity.onResume");
