@@ -1,5 +1,5 @@
 import { useRef, forwardRef, useImperativeHandle, useMemo } from 'react'
-import { View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 // import music from '@/utils/musicSdk'
 // import InsetShadow from 'react-native-inset-shadow'
@@ -73,7 +73,8 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
           // 两行相加就是搜索栏高度：不留空档，结果列表才能紧贴搜索框
           // 行高压到刚够显示、字号统一到 14 —— 之前来源用的是 15sp，
           // 比「歌曲」大一号，会顶出第二行、压在联想卡片上，看着就不衔接
-          height: barH,
+          // +1：底部那道分隔线算在盒子内部，不加会把两行挤掉 1dp
+          height: barH + 1,
           flexWrap: 'wrap',
           // 不透明底色 + zIndex：搜索栏永远压在结果列表之上，列表滚动时不会从它下面透出来
           backgroundColor: theme['c-content-background'],
@@ -81,6 +82,9 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
           borderTopRightRadius: 10,
           // 行高算错时宁可把文字裁在搜索栏里，也不要让它冒出去压住联想卡片
           overflow: 'hidden',
+          // 平台 / 歌曲-歌单 下面那道分隔线（之前因为它压住文字被删过，现在行高够了才加回来）
+          borderBottomWidth: 1,
+          borderBottomColor: theme['c-border-background'],
         },
       ]}
     >
