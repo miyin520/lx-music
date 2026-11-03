@@ -288,9 +288,20 @@ const WatchList = memo(({ componentId }: { componentId: string }) => {
     [lists, activeListId],
   )
 
+  // 真正用来播放的列表 id。
+  // activeListId 在启动早期可能是空串（列表数据还没初始化完），
+  // 而界面标题会自动回落到 lists[0]；如果这时候直接拿空串去 playList，
+  // playList 内部 getList('') 拿到空数组 → 静默 return，表现就是「点了完全没反应」。
+  const playListId = activeListId || activeList?.id || LIST_IDS.DEFAULT
+
   const handlePlay = useCallback((index: number) => {
-    void playList(activeListId, index)
-  }, [activeListId])
+    void (async () => {
+      // playList 读的是内存缓存（allMusicList），缓存没热时同样会静默失败。
+      // getListMusics 是幂等的：有缓存直接返回，没有才去读库并写进缓存。
+      await getListMusics(playListId)
+      await playList(playListId, index)
+    })()
+  }, [playListId])
 
   // 顶部列表选择条：◁ 上一个 / ▷ 下一个
   const switchPrev = useCallback(() => {
