@@ -42,8 +42,9 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
   const fontSize = useFontSize()
   // 第二行高度按「当前字号的实际行高」算：14sp 在用户把字体调大后会变高，
   // 固定 26/30 会把文字顶出去，压到下面的联想卡片上（就是看着不衔接的原因）
-  const bottomRowH = useMemo(() => Math.max(30, Math.ceil(getTextSize(14) * 1.38) + 6), [fontSize])
-  const barH = 32 + bottomRowH
+  const bottomRowH = useMemo(() => Math.max(32, Math.ceil(getTextSize(14) * 1.38) + 8), [fontSize])
+  const inputRowH = 34
+  const barH = inputRowH + bottomRowH
   // 固定两行布局：搜索框独占一行，来源与类型放第二行。
   //
   // 以前是按宽度在「一行 / 两行」之间切换，两套 JSX 各自挂一个 SourceSelector，
@@ -74,15 +75,20 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
           // 比「歌曲」大一号，会顶出第二行、压在联想卡片上，看着就不衔接
           height: barH,
           flexWrap: 'wrap',
+          // 左右各留 12dp：搜索框从屏幕边缘移到中间，圆角表盘上也不会被边角切到
+          paddingLeft: 12,
+          paddingRight: 12,
           // 不透明底色 + zIndex：搜索栏永远压在结果列表之上，列表滚动时不会从它下面透出来
           backgroundColor: theme['c-content-background'],
           borderTopLeftRadius: 10,
           borderTopRightRadius: 10,
+          // 行高算错时宁可把文字裁在搜索栏里，也不要让它冒出去压住联想卡片
+          overflow: 'hidden',
         },
       ]}
     >
       {/* 第一行：搜索框占满整行 */}
-      <View style={styles.compactInputRow}>
+      <View style={[styles.compactInputRow, { height: inputRowH }]}>
         <SearchInput
           ref={searchInputRef}
           onChangeText={onTipSearch}
@@ -127,20 +133,15 @@ const styles = createStyle({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    // 与 Input 自身的 32 高度一致，上下不留空白
-    height: 32,
-    paddingLeft: 6,
+    height: 34,
   },
   compactBottomRow: {
     width: '100%',
-    // 来源/类型行 30 高：14sp 文字 + 行高才不会被挤出去（原来 26 会顶出去压住联想卡片）
-    height: 30,
+    // 高度由组件按字号算（见 bottomRowH）
+    height: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    // 给左边留点空隙，否则来源名第一个字会贴边被裁
-    paddingLeft: 8,
-    paddingRight: 4,
   },
   typeSwitch: {
     maxWidth: 120,

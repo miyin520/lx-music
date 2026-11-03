@@ -92,6 +92,8 @@ const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTip
             backgroundColor: theme['c-content-background'],
             borderColor: theme['c-border-background'],
             borderWidth: isWatch() ? 1 : 0,
+            // 和搜索栏保持同样的左右内缩，卡片边缘与搜索框对齐
+            marginHorizontal: isWatch() ? 12 : 0,
             borderTopWidth: 0,
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
