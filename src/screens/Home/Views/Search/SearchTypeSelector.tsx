@@ -55,7 +55,7 @@ export default () => {
 
 const styles = createStyle({
   single: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 5,
     // 所在行 30 高，按钮贴着行高不撑出去
     paddingVertical: 0,
     alignItems: 'center',

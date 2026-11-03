@@ -105,8 +105,8 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
             onSourceChange={onSourceChange}
             center
             fontSize={14}
-            // 和第一行输入框的左内边距对齐（输入框 6 + 自带 5 = 11）
-            paddingLeft={5}
+            // 和第一行输入框文字对齐：卡片内缩 12 + Input 7 + 自带 5 → 这里也取 12
+            paddingLeft={12}
           />
         </View>
         <View style={styles.typeSwitch}>
@@ -134,6 +134,8 @@ const styles = createStyle({
     flexDirection: 'row',
     alignItems: 'center',
     height: 34,
+    // 加上 Input 自身的 5dp 左内边距，文字正好落在卡片内缩 12dp 的位置
+    paddingLeft: 7,
   },
   compactBottomRow: {
     width: '100%',
@@ -146,9 +148,6 @@ const styles = createStyle({
   typeSwitch: {
     maxWidth: 120,
     justifyContent: 'center',
-    // 整体往右挪一点，别和搜索框贴太近
     marginLeft: 6,
-    marginRight: 2,
-    paddingRight: 6,
   },
 })

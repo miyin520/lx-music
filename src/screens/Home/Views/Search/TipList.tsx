@@ -3,7 +3,6 @@ import { View } from 'react-native'
 import SearchTipList, { type SearchTipListProps as _SearchTipListProps, type SearchTipListType as _SearchTipListType } from '@/components/SearchTipList'
 import Button from '@/components/common/Button'
 import Text from '@/components/common/Text'
-import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeH, setSpText } from '@/utils/pixelRatio'
@@ -139,7 +138,6 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
   const renderItem: SearchTipListProps['renderItem'] = ({ item }) => {
     return (
       <Button style={[styles.item, { height: itemHeight }]} onPress={() => { onSearch(item) }} key={item}>
-        <Icon name="search-2" size={isWatch() ? 14 : 11} color={theme['c-400']} style={styles.itemIcon} />
         {renderLabel(item)}
       </Button>
     )
@@ -168,10 +166,8 @@ const styles = createStyle({
     height: ITEM_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
+    // 与搜索栏里文字的左边距一致（卡片内缩 12 + 这里 12），整块内容落在同一条竖线上
     paddingLeft: isWatch() ? 12 : 15,
-    paddingRight: isWatch() ? 10 : 15,
-  },
-  itemIcon: {
-    marginRight: isWatch() ? 10 : 6,
+    paddingRight: isWatch() ? 12 : 15,
   },
 })
