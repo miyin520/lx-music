@@ -5,7 +5,7 @@
  *  - 我的：列表选择侧栏 + 歌曲列表（表盘专属）
  *  - 搜索 / 歌单 / 排行榜 / 设置：复用原有子页面
  */
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { View, TouchableOpacity } from 'react-native'
 
 import Text from '@/components/common/Text'
@@ -24,7 +24,7 @@ import WatchSettings from './Settings'
 import WatchList from './List'
 import { makeMetrics } from './metrics'
 import { setSpText } from '@/utils/pixelRatio'
-import { exitApp } from '@/utils/nativeModules/utils'
+import { exitApp, setFullscreen } from '@/utils/nativeModules/utils'
 import WatchBackground from './WatchBackground'
 
 type TabId = 'mine' | 'search' | 'songlist' | 'top' | 'setting'
@@ -63,6 +63,13 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
   const railFont = Math.max(Math.min(railBoxW * 0.2, m.fontSm * 0.92), 8)
   // 高度按内容兜底：文字被用户调大时，遮罩跟着变高，不会"上下露出一截"
   const railBoxH = Math.max(railBoxW, railIcon + setSpText(railFont) * 1.35 + 8)
+
+  // 全面屏：设置变化（以及每次进入主页）都重新申请一次，
+  // 这样重启后不用进设置页也能恢复沉浸状态
+  const fullscreen = useSettingValue('common.watchFullscreen')
+  useEffect(() => {
+    setFullscreen(fullscreen)
+  }, [fullscreen])
 
   const content = useMemo(() => {
     // 我的列表：表盘专属界面，直接用

@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -100,6 +101,38 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     };
 
     reactContext.registerReceiver(screenOnOffReceiver, theFilter);
+  }
+
+  /**
+   * 全面屏（沉浸式）：隐藏状态栏 + 手势条/导航栏。
+   *
+   * 用老的 SYSTEM_UI_FLAG 那套：从 API 19 到 14 都还能用，
+   * 新 API（WindowInsetsController）在部分老 ROM 上反而没有实现。
+   * IMMERSIVE_STICKY 保证用户从边缘划出后过一会儿自动隐藏。
+   */
+  @ReactMethod
+  public void setFullscreen(final boolean enabled) {
+    final Activity activity = reactContext.getCurrentActivity();
+    if (activity == null) return;
+    activity.runOnUiThread(() -> {
+      try {
+        Window window = activity.getWindow();
+        View decor = window.getDecorView();
+        if (enabled) {
+          decor.setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+              | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+              | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+              | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+              | View.SYSTEM_UI_FLAG_FULLSCREEN
+              | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+          );
+        } else {
+          decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        }
+      } catch (Throwable ignored) {
+      }
+    });
   }
 
   /**

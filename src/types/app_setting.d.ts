@@ -87,6 +87,11 @@ declare global {
       'common.watchCornerRadius': number
 
       /**
+       * 申请全面屏（隐藏状态栏与手势条）
+       */
+      'common.watchFullscreen': boolean
+
+      /**
        * 界面形态：自动识别 / 手机版 / 手表版
        */
 

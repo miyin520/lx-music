@@ -19,6 +19,20 @@ export const getDisplayCornerRadius = (): number => {
   }
 }
 
+/**
+ * 申请全面屏（沉浸式）：隐藏状态栏与手势条。
+ * 传 false 恢复系统栏。老版本/不支持的 ROM 上调用无效，不抛错。
+ */
+export const setFullscreen = (enabled: boolean): void => {
+  try {
+    const fn = UtilsModule?.setFullscreen as undefined | ((enabled: boolean) => void)
+    if (typeof fn != 'function') return
+    fn(enabled)
+  } catch (err) {
+    // 不支持就算了，不影响其它功能
+  }
+}
+
 export const getSupportedAbis = UtilsModule.getSupportedAbis
 export const restartApp = UtilsModule.restartApp
 

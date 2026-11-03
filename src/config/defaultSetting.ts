@@ -20,6 +20,8 @@ const defaultSetting: LX.AppSetting = {
   'common.watchScreenInset': 0,
   // 表盘圆角半径（dp）：-1 = 自动（读系统值，读不到按屏幕尺寸估算）
   'common.watchCornerRadius': -1,
+  // 申请全面屏（隐藏状态栏与手势条）
+  'common.watchFullscreen': false,
   // 界面形态：auto = 按屏幕尺寸自动识别；phone / watch = 用户手动指定
   'common.watchRailSide': 'left',
   'common.watchRailExit': true,
