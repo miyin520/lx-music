@@ -5,7 +5,6 @@ const defaultSetting: LX.AppSetting = {
   'common.isAutoTheme': false,
   'common.langId': null,
   'common.apiSource': '',
-  'common.sourceNameType': 'alias',
   'common.shareType': 'system',
   'common.isAgreePact': false,
   'common.autoHidePlayBar': true,
@@ -17,7 +16,6 @@ const defaultSetting: LX.AppSetting = {
   'common.useSystemFileSelector': true,
   'common.alwaysKeepStatusbarHeight': false,
   // 圆角屏（手表）四周留白，0 = 关闭
-  'common.watchScreenInset': 0,
   // 表盘圆角半径（dp）：-1 = 自动（读系统值，读不到按屏幕尺寸估算）
   'common.watchCornerRadius': -1,
   // 申请全面屏（隐藏状态栏与手势条）
@@ -39,7 +37,8 @@ const defaultSetting: LX.AppSetting = {
   'player.timeoutExitPlayed': true,
   'player.isAutoCleanPlayedList': false,
   'player.isHandleAudioFocus': true,
-  'player.isEnableAudioOffload': true,
+  // 上游 1.9.2 起默认关闭：部分设备（尤其手表/蓝牙）开启后会没声音或切歌异常
+  'player.isEnableAudioOffload': false,
   'player.isShowLyricTranslation': false,
   'player.isShowLyricRoma': false,
   'player.isShowNotificationImage': true,

@@ -22,9 +22,10 @@ declare global {
       'common.apiSource': string
 
       /**
-       * 音源名称类型，原名、别名
+       * 音源名称类型：设置项已删除，代码固定用「原名」；
+       * 保留这个键只为兼容历史配置（不会再被读取）
        */
-      'common.sourceNameType': 'alias' | 'real'
+      'common.sourceNameType'?: 'alias' | 'real'
 
       /**
        * 歌曲分享方式
@@ -75,11 +76,6 @@ declare global {
        * 总是保留状态栏高度
        */
       'common.alwaysKeepStatusbarHeight': boolean
-
-      /**
-       * 圆角屏（手表）四周留白，避免内容被圆角裁掉，单位 dp
-       */
-      'common.watchScreenInset': number
 
       /**
        * 表盘圆角半径（dp），-1 = 自动（读系统值，读不到按屏幕尺寸估算）
