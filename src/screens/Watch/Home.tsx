@@ -24,6 +24,7 @@ import WatchSettings from './Settings'
 import WatchList from './List'
 import { makeMetrics } from './metrics'
 import { setSpText } from '@/utils/pixelRatio'
+import { windowSizeTools } from '@/utils/windowSizeTools'
 import { exitApp, setFullscreen } from '@/utils/nativeModules/utils'
 import WatchBackground from './WatchBackground'
 
@@ -69,6 +70,14 @@ const WatchHome = memo(({ componentId }: { componentId: string }) => {
   const fullscreen = useSettingValue('common.watchFullscreen')
   useEffect(() => {
     setFullscreen(fullscreen)
+    // 系统栏显隐会改变可用窗口尺寸：稍后重新读一次，并按新尺寸重算布局。
+    // 两次是为了兼容「部分 ROM 延迟几百毫秒才真正收起状态栏」
+    const t1 = setTimeout(() => { void windowSizeTools.refresh() }, 400)
+    const t2 = setTimeout(() => { void windowSizeTools.refresh() }, 1200)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
   }, [fullscreen])
 
   const content = useMemo(() => {

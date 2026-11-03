@@ -18,6 +18,9 @@ export const windowSizeTools = {
     height: 0,
   },
   listeners: [] as SizeHandler[],
+  /** 是否已经挂上系统尺寸监听 */
+  _bound: false,
+  _timer: null as ReturnType<typeof setTimeout> | null,
   getSize() {
     // 异步尺寸还没到位时兜底读 Dimensions，避免调用方拿到 0×0
     if (!this.size.width || !this.size.height) {
@@ -62,8 +65,35 @@ export const windowSizeTools = {
     // 模块级的缩放常量（pixelRatio / watchMode）在导入期算过一次，
     // 不广播就会一直用导入期那个（可能是 0 或全屏）的值 —— 表现为首次启动布局错乱。
     for (const handler of this.listeners) handler(this.size)
+    // 监听系统尺寸变化：旋转屏幕、切换全面屏（系统栏显隐）、分屏都会改变可用窗口。
+    // 以前这段是注释掉的，尺寸只在启动时读一次 —— 于是横屏启动 / 切完全面屏重启后，
+    // 界面还按竖屏那次的尺寸算，看起来就是「UI 变形」。
+    if (!this._bound) {
+      this._bound = true
+      Dimensions.addEventListener('change', () => { this.scheduleRefresh() })
+    }
     // console.log('init windowSizeTools')
     return size
+  },
+
+  /** 防抖重新读取尺寸（旋转/全面屏切换时事件会连着来几次） */
+  scheduleRefresh(delay = 150) {
+    if (this._timer) clearTimeout(this._timer)
+    this._timer = setTimeout(() => {
+      this._timer = null
+      void this.refresh()
+    }, delay)
+  },
+
+  /** 重新向系统要一次可用窗口尺寸并广播出去 */
+  async refresh() {
+    try {
+      const size = await getWindowSize()
+      if (!size.width || !size.height) return
+      this.setWindowSize(size.width, size.height)
+    } catch (err) {
+      // 读不到就保持原值
+    }
   },
   setWindowSize(width: number, height: number) {
     this.size = {
