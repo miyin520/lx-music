@@ -12,6 +12,8 @@ type Sources = Readonly<Array<LX.OnlineSource | 'all'>>
 
 export interface SourceSelectorProps<S extends Sources> {
   fontSize?: number
+  /** 左侧内边距（dp），默认 15；搜索页传小一点好和输入框文字对齐 */
+  paddingLeft?: number
   center?: _DorpDownMenuProps<any>['center']
   onSourceChange: (source: S[number]) => void
 }
@@ -29,7 +31,7 @@ export const useSourceListI18n = (list: Sources) => {
   }, [list, sourceNameType, t])
 }
 
-const Component = <S extends Sources>({ fontSize = 15, center, onSourceChange }: SourceSelectorProps<S>, ref: Ref<SourceSelectorType<S>>) => {
+const Component = <S extends Sources>({ fontSize = 15, paddingLeft, center, onSourceChange }: SourceSelectorProps<S>, ref: Ref<SourceSelectorType<S>>) => {
   const sourceNameType = useSettingValue('common.sourceNameType')
   const [list, setList] = useState([] as unknown as S)
   const [source, setSource] = useState<S[number]>('kw')
@@ -59,7 +61,7 @@ const Component = <S extends Sources>({ fontSize = 15, center, onSourceChange }:
       fontSize={fontSize}
       activeId={source}
     >
-      <View style={styles.sourceMenu}>
+      <View style={[styles.sourceMenu, paddingLeft != null ? { paddingLeft, paddingRight: paddingLeft } : null]}>
         <Text style={{ textAlign: center ? 'center' : 'left' }} numberOfLines={1} size={fontSize}>{t(`source_${sourceNameType}_${source}`)}</Text>
       </View>
     </DorpDownMenu>

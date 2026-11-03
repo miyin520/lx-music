@@ -1,4 +1,4 @@
-import { useRef, forwardRef, useImperativeHandle } from 'react'
+import { useRef, forwardRef, useImperativeHandle, useMemo } from 'react'
 import { View } from 'react-native'
 
 // import music from '@/utils/musicSdk'
@@ -11,6 +11,8 @@ import SearchInput, { type SearchInputType, type SearchInputProps } from './Sear
 import SearchTypeSelector from '../SearchTypeSelector'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { useFontSize } from '@/store/common/hook'
+import { getTextSize } from '@/utils/pixelRatio'
 import { type Source as MusicSource } from '@/store/search/music/state'
 import { type Source as SonglistSource } from '@/store/search/songlist/state'
 
@@ -37,6 +39,11 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
   const sourceSelectorRef = useRef<SourceSelectorType>(null)
   const searchInputRef = useRef<SearchInputType>(null)
   const theme = useTheme()
+  const fontSize = useFontSize()
+  // 第二行高度按「当前字号的实际行高」算：14sp 在用户把字体调大后会变高，
+  // 固定 26/30 会把文字顶出去，压到下面的联想卡片上（就是看着不衔接的原因）
+  const bottomRowH = useMemo(() => Math.max(30, Math.ceil(getTextSize(14) * 1.38) + 6), [fontSize])
+  const barH = 32 + bottomRowH
   // 固定两行布局：搜索框独占一行，来源与类型放第二行。
   //
   // 以前是按宽度在「一行 / 两行」之间切换，两套 JSX 各自挂一个 SourceSelector，
@@ -63,10 +70,14 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
         styles.searchBar,
         {
           // 两行相加就是搜索栏高度：不留空档，结果列表才能紧贴搜索框
-          height: 58,
+          // 行高压到刚够显示、字号统一到 14 —— 之前来源用的是 15sp，
+          // 比「歌曲」大一号，会顶出第二行、压在联想卡片上，看着就不衔接
+          height: barH,
           flexWrap: 'wrap',
           // 不透明底色 + zIndex：搜索栏永远压在结果列表之上，列表滚动时不会从它下面透出来
           backgroundColor: theme['c-content-background'],
+          borderTopLeftRadius: 10,
+          borderTopRightRadius: 10,
         },
       ]}
     >
@@ -81,9 +92,16 @@ export default forwardRef<HeaderBarType, HeaderBarProps>(({ onSourceChange, onTi
         />
       </View>
       {/* 第二行：来源 + 歌曲/歌单切换，各自靠边 */}
-      <View style={styles.compactBottomRow}>
+      <View style={[styles.compactBottomRow, { height: bottomRowH }]}>
         <View style={styles.selector}>
-          <SourceSelector ref={sourceSelectorRef} onSourceChange={onSourceChange} center />
+          <SourceSelector
+            ref={sourceSelectorRef}
+            onSourceChange={onSourceChange}
+            center
+            fontSize={14}
+            // 和第一行输入框的左内边距对齐（输入框 6 + 自带 5 = 11）
+            paddingLeft={5}
+          />
         </View>
         <View style={styles.typeSwitch}>
           <SearchTypeSelector />
@@ -115,8 +133,8 @@ const styles = createStyle({
   },
   compactBottomRow: {
     width: '100%',
-    // 来源/类型行压到 26：紧贴搜索框，剩下的高度全部让给结果列表
-    height: 26,
+    // 来源/类型行 30 高：14sp 文字 + 行高才不会被挤出去（原来 26 会顶出去压住联想卡片）
+    height: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

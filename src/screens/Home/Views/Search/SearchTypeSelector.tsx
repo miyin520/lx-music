@@ -44,7 +44,7 @@ export default () => {
       onPress={() => { handleTypeChange(other as SearchType) }}
     >
       <Text
-        size={13}
+        size={14}
         color={theme['c-primary-font-active']}
         numberOfLines={1}
         style={styles.singleText}
@@ -55,8 +55,8 @@ export default () => {
 
 const styles = createStyle({
   single: {
-    paddingHorizontal: 8,
-    // 上下不再撑高度：所在行只有 26 高，按钮必须贴着行高
+    paddingHorizontal: 10,
+    // 所在行 30 高，按钮贴着行高不撑出去
     paddingVertical: 0,
     alignItems: 'center',
     justifyContent: 'center',

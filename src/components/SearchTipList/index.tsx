@@ -93,6 +93,8 @@ const Component = <T extends ItemT<T>>({ onPressBg = noop, ...props }: SearchTip
             borderColor: theme['c-border-background'],
             borderWidth: isWatch() ? 1 : 0,
             borderTopWidth: 0,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
             borderBottomLeftRadius: isWatch() ? 14 : 0,
             borderBottomRightRadius: isWatch() ? 14 : 0,
             overflow: 'hidden',

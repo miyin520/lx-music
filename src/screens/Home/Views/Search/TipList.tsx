@@ -1,4 +1,4 @@
-import { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react'
+import { useRef, useImperativeHandle, forwardRef, useState, useEffect, useMemo } from 'react'
 import { View } from 'react-native'
 import SearchTipList, { type SearchTipListProps as _SearchTipListProps, type SearchTipListType as _SearchTipListType } from '@/components/SearchTipList'
 import Button from '@/components/common/Button'
@@ -7,6 +7,7 @@ import { Icon } from '@/components/common/Icon'
 import { useTheme } from '@/store/theme/hook'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeH, setSpText } from '@/utils/pixelRatio'
+import { useFontSize } from '@/store/common/hook'
 import { isWatch } from '@/utils/watchMode'
 import musicSdk from '@/utils/musicSdk'
 import searchState, { type InitState as SearchState } from '@/store/search/state'
@@ -14,9 +15,8 @@ import { setSearchText, setTipList, setTipListInfo } from '@/core/search/search'
 import { debounce } from '@/utils'
 
 /** 一行联想词的高度：表盘上要按得着，至少 40dp */
-export const ITEM_HEIGHT = isWatch()
-  ? Math.max(Math.round(setSpText(14) * 2.6), 40)
-  : scaleSizeH(36)
+/** 联想行的最小高度（真实高度还要跟当前字号取 max，见组件里的 itemHeight） */
+export const ITEM_HEIGHT = isWatch() ? 46 : scaleSizeH(36)
 
 /** 联想词最多显示多少条：再多也点不过来，超过就让列表自己滚 */
 const MAX_TIP = 20
@@ -41,6 +41,12 @@ export interface TipListType {
 
 export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
   const theme = useTheme()
+  const fontSize = useFontSize()
+  // 行高跟着字号走：字体调大时行也变高，文字不会被裁
+  const itemHeight = useMemo(() => {
+    if (!isWatch()) return ITEM_HEIGHT
+    return Math.max(Math.ceil(setSpText(15) * 1.38) + 12, ITEM_HEIGHT)
+  }, [fontSize])
   const searchTipListRef = useRef<SearchTipListType>(null)
   // 当前关键词：渲染时用来把命中的那几个字标成主题色
   const keywordRef = useRef('')
@@ -120,11 +126,11 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
   const renderLabel = (text: string) => {
     const keyword = keywordRef.current.trim()
     const index = keyword ? text.toLowerCase().indexOf(keyword.toLowerCase()) : -1
-    if (index < 0) return <Text numberOfLines={1} size={isWatch() ? 14 : 15}>{text}</Text>
+    if (index < 0) return <Text numberOfLines={1} size={15}>{text}</Text>
     return (
-      <Text numberOfLines={1} size={isWatch() ? 14 : 15}>
+      <Text numberOfLines={1} size={15}>
         {text.slice(0, index)}
-        <Text numberOfLines={1} size={isWatch() ? 14 : 15} color={theme['c-primary']}>{text.slice(index, index + keyword.length)}</Text>
+        <Text numberOfLines={1} size={15} color={theme['c-primary']}>{text.slice(index, index + keyword.length)}</Text>
         {text.slice(index + keyword.length)}
       </Text>
     )
@@ -132,7 +138,7 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
 
   const renderItem: SearchTipListProps['renderItem'] = ({ item }) => {
     return (
-      <Button style={styles.item} onPress={() => { onSearch(item) }} key={item}>
+      <Button style={[styles.item, { height: itemHeight }]} onPress={() => { onSearch(item) }} key={item}>
         <Icon name="search-2" size={isWatch() ? 14 : 11} color={theme['c-400']} style={styles.itemIcon} />
         {renderLabel(item)}
       </Button>
@@ -140,7 +146,7 @@ export default forwardRef<TipListType, TipListProps>(({ onSearch }, ref) => {
   }
   const getkey: SearchTipListProps['keyExtractor'] = (item) => item
   const getItemLayout: SearchTipListProps['getItemLayout'] = (data, index) => {
-    return { length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index }
+    return { length: itemHeight, offset: itemHeight * index, index }
   }
 
   return (
@@ -162,7 +168,7 @@ const styles = createStyle({
     height: ITEM_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: isWatch() ? 14 : 15,
+    paddingLeft: isWatch() ? 12 : 15,
     paddingRight: isWatch() ? 10 : 15,
   },
   itemIcon: {
