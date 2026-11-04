@@ -90,6 +90,11 @@ export const windowSizeTools = {
     try {
       const size = await getWindowSize()
       if (!size.width || !size.height) return
+      const prev = this.size
+      // 输入法弹出时 getWindowVisibleDisplayFrame 返回的是「扣掉键盘」的高度，
+      // 宽度不变、只有高度变小 —— 这种变化不能算布局尺寸变化，
+      // 否则键盘一弹整个表盘界面就被压扁（侧边栏图标挤成一团就是这个原因）。
+      if (prev.width > 0 && size.width == prev.width && size.height < prev.height - 40) return
       this.setWindowSize(size.width, size.height)
     } catch (err) {
       // 读不到就保持原值
