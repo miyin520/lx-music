@@ -110,8 +110,22 @@ public class UtilsModule extends ReactContextBaseJavaModule {
    * 新 API（WindowInsetsController）在部分老 ROM 上反而没有实现。
    * IMMERSIVE_STICKY 保证用户从边缘划出后过一会儿自动隐藏。
    */
+  private static final String SP_NAME = "watch_ui";
+  private static final String SP_FULLSCREEN = "fullscreen";
   /** 全面屏开关的当前状态，供窗口重新获得焦点时恢复 */
   private static boolean fullscreenEnabled = false;
+  private static boolean fullscreenLoaded = false;
+
+  /** 从 SharedPreferences 恢复开关（进程重启后 JS 还没起来也能先按上次的状态设好） */
+  private static void loadFullscreenFlag(Activity activity) {
+    if (fullscreenLoaded || activity == null) return;
+    fullscreenLoaded = true;
+    try {
+      fullscreenEnabled = activity.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        .getBoolean(SP_FULLSCREEN, false);
+    } catch (Throwable ignored) {
+    }
+  }
 
   /**
    * 按当前开关状态重设系统栏。
@@ -120,6 +134,7 @@ public class UtilsModule extends ReactContextBaseJavaModule {
    */
   public static void applyFullscreen(final Activity activity) {
     if (activity == null) return;
+    loadFullscreenFlag(activity);
     final boolean enabled = fullscreenEnabled;
     activity.runOnUiThread(() -> {
       try {
@@ -148,6 +163,15 @@ public class UtilsModule extends ReactContextBaseJavaModule {
   @ReactMethod
   public void setFullscreen(final boolean enabled) {
     fullscreenEnabled = enabled;
+    fullscreenLoaded = true;
+    try {
+      Activity activity = reactContext.getCurrentActivity();
+      if (activity != null) {
+        activity.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE).edit()
+          .putBoolean(SP_FULLSCREEN, enabled).apply();
+      }
+    } catch (Throwable ignored) {
+    }
     applyFullscreen(reactContext.getCurrentActivity());
     if (enabled) {
       // 有些 ROM 会延迟几百毫秒再把栏放回来，补一次

@@ -24,6 +24,7 @@ import { useFontSize } from '@/store/common/hook'
 import { createStyle } from '@/utils/tools'
 import LyricView from '@/screens/PlayDetail/Vertical/Lyric'
 import { makeMetrics } from './metrics'
+import { useWatchFullscreen } from './useFullscreen'
 import WatchBackground from './WatchBackground'
 import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
 import DesktopLyricEnable, { type DesktopLyricEnableType } from '@/components/DesktopLyricEnable'
@@ -135,6 +136,8 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const fontSize = useFontSize()
   // fontSize 进依赖：改字体大小时重新算行高/高度，避免文字被裁
   const m = useMemo(() => makeMetrics(win.width, win.height, userCorner), [win.width, win.height, userCorner, fontSize])
+  // 进入播放页时系统栏可能被重新放出来，这里再申请一次全面屏
+  useWatchFullscreen()
 
   const musicInfo = usePlayerMusicInfo()
   const isPlay = useIsPlay()

@@ -25,5 +25,7 @@ public class MainActivity extends NavigationActivity {
   protected void onResume() {
     super.onResume();
     NativeBootLog.log(this, "MainActivity.onResume");
+    // 从后台回来 / 新页面进来时补一次全面屏
+    cn.miyin.music.watch.utils.UtilsModule.applyFullscreen(this);
   }
 }

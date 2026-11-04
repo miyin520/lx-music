@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
 
 import { StyleSheet, View } from 'react-native'
 
@@ -10,8 +10,8 @@ import { useFontSize } from '@/store/common/hook'
 import Text from '@/components/common/Text'
 import { getTextSize } from '@/utils/pixelRatio'
 import { useTheme } from '@/store/theme/hook'
-import { tipDialog } from '@/utils/tools'
 import { restartApp } from '@/utils/nativeModules/utils'
+import ConfirmDialog, { type ConfirmType } from '@/screens/Watch/ConfirmDialog'
 
 // 档位间距拉大：原来 0.8~1.3 每档只差 0.1，在小屏上看不出区别
 const LIST = [
@@ -50,9 +50,10 @@ const useActive = (size: SIZE_TYPE) => {
   return isActive
 }
 
-const Item = ({ size, label }: {
+const Item = ({ size, label, onPick }: {
   size: SIZE_TYPE
   label: string
+  onPick: (size: SIZE_TYPE) => void
 }) => {
   const isActive = useActive(size)
   // const [toggleCheckBox, setToggleCheckBox] = useState(false)
@@ -64,12 +65,7 @@ const Item = ({ size, label }: {
       onChange={() => {
         if (isActive) return
         setFontSize(size)
-        // 字体大小要在界面重建后才完全生效，改完直接提示重启
-        void tipDialog({
-          title: '字体大小已修改',
-          message: '需要重启应用后生效，是否立即重启？',
-          btnText: '立即重启',
-        }).then(() => { restartApp() })
+        onPick(size)
       }}
       need
     />
@@ -78,18 +74,30 @@ const Item = ({ size, label }: {
 
 export default memo(() => {
   const t = useI18n()
+  const confirmRef = useRef<ConfirmType>(null)
 
   const list = useMemo(() => {
     return LIST.map((item) => ({ size: item.size, name: t(item.name) }))
   }, [t])
 
+  const handlePick = useCallback(() => {
+    // 字体大小要在界面重建后才完全生效，改完问一句要不要重启
+    void confirmRef.current?.show({
+      title: '字体大小已修改',
+      message: '需要重启应用后生效，是否立即重启？',
+      okText: '立即重启',
+      cancelText: '稍后',
+    }).then((ok) => { if (ok) restartApp() })
+  }, [])
+
   return (
     <SubTitle title={t('setting_basic_font_size')}>
       <View style={styles.list}>
         {
-          list.map(({ size, name }) => <Item key={size} size={size} label={name} />)
+          list.map(({ size, name }) => <Item key={size} size={size} label={name} onPick={handlePick} />)
         }
       </View>
+      <ConfirmDialog ref={confirmRef} />
     </SubTitle>
   )
 })
