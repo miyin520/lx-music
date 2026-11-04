@@ -31,9 +31,12 @@ const Component = (props: {}, ref: Ref<ConfirmType>) => {
   const [options, setOptions] = useState<ConfirmOptions>({ title: '' })
 
   const finish = (ok: boolean) => {
-    modalRef.current?.setVisible(false)
-    resolveRef.current?.(ok)
+    // 先把 resolver 取出来再关弹窗：关弹窗会触发 onHide，那里也会 resolve，
+    // 顺序反了就会先 resolve(false)，导致「立即重启」永远不生效
+    const resolve = resolveRef.current
     resolveRef.current = null
+    modalRef.current?.setVisible(false)
+    resolve?.(ok)
   }
 
   useImperativeHandle(ref, () => ({

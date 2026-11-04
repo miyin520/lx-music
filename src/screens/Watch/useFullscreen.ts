@@ -16,11 +16,8 @@ export const useWatchFullscreen = () => {
 
   useEffect(() => {
     setFullscreen(fullscreen)
-    const t1 = setTimeout(() => { void windowSizeTools.refresh() }, 400)
-    const t2 = setTimeout(() => { void windowSizeTools.refresh() }, 1200)
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-    }
+    // 系统栏显隐后可用窗口会变，稍后重算一次尺寸
+    const timer = setTimeout(() => { void windowSizeTools.refresh() }, 400)
+    return () => { clearTimeout(timer) }
   }, [fullscreen])
 }

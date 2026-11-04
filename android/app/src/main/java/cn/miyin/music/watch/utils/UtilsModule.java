@@ -21,6 +21,9 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import androidx.core.app.LocaleManagerCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.os.LocaleListCompat;
 
@@ -127,6 +130,14 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     }
   }
 
+  /** 只在开关打开时才重设系统栏（焦点变化时用，避免无谓地动窗口） */
+  public static void applyFullscreenIfEnabled(final Activity activity) {
+    if (activity == null) return;
+    loadFullscreenFlag(activity);
+    if (!fullscreenEnabled) return;
+    applyFullscreen(activity);
+  }
+
   /**
    * 按当前开关状态重设系统栏。
    * 供 setFullscreen 调用，也供 MainActivity#onWindowFocusChanged 调用 ——
@@ -140,20 +151,18 @@ public class UtilsModule extends ReactContextBaseJavaModule {
       try {
         Window window = activity.getWindow();
         View decor = window.getDecorView();
+        // 优先用 androidx 的 WindowInsetsController：Android 11+ 上只有它能真正把系统栏藏住，
+        // 老的 SYSTEM_UI_FLAG 在很多 ROM 上已经被忽略（用户反馈「勾了状态栏还在」）。
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, decor);
         if (enabled) {
-          // FLAG_FULLSCREEN 对老系统/部分 ROM 是必需的一步
+          if (controller != null) {
+            controller.hide(WindowInsetsCompat.Type.systemBars());
+            controller.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+          }
           window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-          decor.setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-              | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-              | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-              | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-              | View.SYSTEM_UI_FLAG_FULLSCREEN
-              | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-          );
         } else {
+          if (controller != null) controller.show(WindowInsetsCompat.Type.systemBars());
           window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-          decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
       } catch (Throwable ignored) {
       }
@@ -173,11 +182,6 @@ public class UtilsModule extends ReactContextBaseJavaModule {
     } catch (Throwable ignored) {
     }
     applyFullscreen(reactContext.getCurrentActivity());
-    if (enabled) {
-      // 有些 ROM 会延迟几百毫秒再把栏放回来，补一次
-      final Activity activity = reactContext.getCurrentActivity();
-      new Handler(Looper.getMainLooper()).postDelayed(() -> applyFullscreen(activity), 600);
-    }
   }
 
   /**
