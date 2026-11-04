@@ -19,8 +19,47 @@ import { hideDesktopLyricView } from '@/utils/nativeModules/lyricDesktop'
 import { getPersistedUriList, selectManagedFolder } from '@/utils/fs'
 
 
+/**
+ * 已经删掉的设置项。
+ *
+ * 这些设置在界面上早就没有入口了，代码里可能还留着默认值兜底，
+ * 但没必要继续写进硬盘（手表存储寸土寸金，也免得旧值一直挂着）。
+ * 保存前统一剔除，下次保存时就顺手把旧文件里的这些键清掉。
+ */
+const OBSOLETE_SETTING_KEYS = [
+  'common.shareType',
+  'common.autoHidePlayBar',
+  'common.homePageScroll',
+  'common.allowProgressBarSeek',
+  'common.showBackBtn',
+  'common.showExitBtn',
+  'common.alwaysKeepStatusbarHeight',
+  'common.watchRailScale',
+  'common.watchScreenInset',
+  'common.sourceNameType',
+  'player.startupAutoPlay',
+  'player.startupPushPlayDetailScreen',
+  'player.isSavePlayTime',
+  'player.isEnableAudioOffload',
+  'player.isShowLyricRoma',
+  'player.isS2t',
+  'player.isShowBluetoothLyric',
+  'player.isShowBluetoothFullLyric',
+  'player.isShowNotificationImage',
+  'theme.dynamicBg',
+  'theme.fontShadow',
+  'list.isShowSource',
+  'list.isSaveScrollLocation',
+] as const
+
+const omitObsoleteSetting = (setting: LX.AppSetting): LX.AppSetting => {
+  const copy: Record<string, unknown> = { ...setting }
+  for (const key of OBSOLETE_SETTING_KEYS) delete copy[key]
+  return copy as unknown as LX.AppSetting
+}
+
 const throttleSaveSetting = throttle(() => {
-  void saveData(storageDataPrefix.setting, settingState.setting)
+  void saveData(storageDataPrefix.setting, omitObsoleteSetting(settingState.setting))
 })
 
 /**
@@ -29,6 +68,8 @@ const throttleSaveSetting = throttle(() => {
 export const initSetting = async() => {
   const setting = (await initAppSetting()).setting
   settingActions.updateSetting(setting)
+  // 启动时写一次：把旧版本残留的、已经删掉的设置键从硬盘里清出去
+  throttleSaveSetting()
   return setting
 }
 

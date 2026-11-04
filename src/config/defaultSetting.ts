@@ -23,7 +23,6 @@ const defaultSetting: LX.AppSetting = {
   // 界面形态：auto = 按屏幕尺寸自动识别；phone / watch = 用户手动指定
   'common.watchRailSide': 'left',
   'common.watchRailExit': true,
-  'common.watchRailScale': 'normal',
 
   'player.startupAutoPlay': false,
   'player.startupPushPlayDetailScreen': false,
@@ -73,10 +72,8 @@ const defaultSetting: LX.AppSetting = {
   'search.isShowHistorySearch': false,
 
   'list.isClickPlayList': false,
-  'list.isShowSource': true,
   'list.isShowAlbumName': false,
   'list.isShowInterval': true,
-  'list.isSaveScrollLocation': true,
   'list.addMusicLocationType': 'top',
 
   'download.fileName': '歌名 - 歌手',
@@ -110,7 +107,6 @@ if (winSize.width && winSize.height) {
     defaultSetting['common.homePageScroll'] = true
     defaultSetting['player.startupPushPlayDetailScreen'] = false
     defaultSetting['player.isShowNotificationImage'] = false
-    defaultSetting['list.isShowSource'] = false
     defaultSetting['list.isShowInterval'] = false
     // 歌词居中：表盘两侧是圆角，左对齐容易被切
     defaultSetting['playDetail.style.align'] = 'center'
