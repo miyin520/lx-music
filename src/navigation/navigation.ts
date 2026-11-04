@@ -10,10 +10,35 @@ import {
 } from './screenNames'
 
 import themeState from '@/store/theme/state'
+import settingState from '@/store/setting/state'
 import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import { getStatusBarStyle } from './utils'
 import { windowSizeTools } from '@/utils/windowSizeTools'
 import { type ListInfoItem } from '@/store/songlist/state'
+
+/**
+ * 系统栏选项（状态栏 / 底部导航栏）
+ *
+ * react-native-navigation 每次 push 都会按这次传入的 options 重新设置系统栏 ——
+ * 只要这里写着 `statusBar.visible: true`，它就会在进入新页面时把状态栏重新显示出来，
+ * 应用层用 WindowInsetsController 隐藏的栏会被它覆盖回去。
+ * 这就是「切换界面后全面屏失效」的真正原因，所以这里统一跟着「申请全面屏」这个开关走。
+ */
+const getSystemBarsOptions = (isDark: boolean): { statusBar: any, navigationBar: any } => {
+  const fullscreen = settingState.setting['common.watchFullscreen']
+  return {
+    statusBar: {
+      drawBehind: true,
+      visible: !fullscreen,
+      style: getStatusBarStyle(isDark),
+      backgroundColor: 'transparent',
+    },
+    navigationBar: {
+      visible: !fullscreen,
+      backgroundColor: themeState.theme['c-content-background'],
+    },
+  }
+}
 
 // const store = getStore()
 // const getTheme = () => getter('common', 'theme')(store.getState())
@@ -65,16 +90,7 @@ export async function pushHomeScreen() {
                 height: 0,
                 drawBehind: false,
               },
-              statusBar: {
-                drawBehind: true,
-                visible: true,
-                style: getStatusBarStyle(theme.isDark),
-                backgroundColor: 'transparent',
-              },
-              navigationBar: {
-                // visible: false,
-                backgroundColor: theme['c-content-background'],
-              },
+              ...getSystemBarsOptions(theme.isDark),
               layout: {
                 componentBackgroundColor: theme['c-content-background'],
               },
@@ -130,16 +146,7 @@ export function pushPlayDetailScreen(componentId: string, skipAnimation = false)
             height: 0,
             drawBehind: false,
           },
-          statusBar: {
-            drawBehind: true,
-            visible: true,
-            style: getStatusBarStyle(theme.isDark),
-            backgroundColor: 'transparent',
-          },
-          navigationBar: {
-            // visible: false,
-            backgroundColor: theme['c-content-background'],
-          },
+          ...getSystemBarsOptions(theme.isDark),
           layout: {
             componentBackgroundColor: theme['c-content-background'],
           },
@@ -215,16 +222,7 @@ export function pushSonglistDetailScreen(componentId: string, info: ListInfoItem
             height: 0,
             drawBehind: false,
           },
-          statusBar: {
-            drawBehind: true,
-            visible: true,
-            style: getStatusBarStyle(theme.isDark),
-            backgroundColor: 'transparent',
-          },
-          navigationBar: {
-            // visible: false,
-            backgroundColor: theme['c-content-background'],
-          },
+          ...getSystemBarsOptions(theme.isDark),
           layout: {
             componentBackgroundColor: theme['c-content-background'],
           },
@@ -348,16 +346,7 @@ export function pushCommentScreen(componentId: string) {
             height: 0,
             drawBehind: false,
           },
-          statusBar: {
-            drawBehind: true,
-            visible: true,
-            style: getStatusBarStyle(theme.isDark),
-            backgroundColor: 'transparent',
-          },
-          navigationBar: {
-            // visible: false,
-            backgroundColor: theme['c-content-background'],
-          },
+          ...getSystemBarsOptions(theme.isDark),
           layout: {
             componentBackgroundColor: theme['c-content-background'],
           },

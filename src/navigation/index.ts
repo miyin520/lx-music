@@ -3,6 +3,7 @@ import * as screenNames from './screenNames'
 import * as navigations from './navigation'
 
 import registerScreens from './registerScreens'
+import settingState from '@/store/setting/state'
 import { removeComponentId } from '@/core/common'
 import { onAppLaunched } from './regLaunchedEvent'
 
@@ -15,11 +16,14 @@ const init = (callback: () => void | Promise<void>) => {
   if (unRegisterEvent) unRegisterEvent.remove()
 
   Navigation.setDefaultOptions({
-    // animations: {
-    //   setRoot: {
-    //     waitForRender: true,
-    //   },
-    // },
+    // 系统栏默认跟随「申请全面屏」这个设置，避免每次 push 页面被 RNN 重新打开
+    statusBar: {
+      drawBehind: true,
+      visible: !settingState.setting['common.watchFullscreen'],
+    },
+    navigationBar: {
+      visible: !settingState.setting['common.watchFullscreen'],
+    },
   })
   unRegisterEvent = Navigation.events().registerScreenPoppedListener(({ componentId }) => {
     removeComponentId(componentId)
