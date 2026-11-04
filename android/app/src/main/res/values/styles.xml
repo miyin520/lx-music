@@ -6,4 +6,11 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
+    <!-- 开启「申请全面屏」时使用：windowFullscreen 是窗口级属性，
+         弹窗（Modal / Dialog）也会跟着全屏，不会再把状态栏带出来 -->
+    <style name="AppTheme.Fullscreen" parent="AppTheme">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
 </resources>
