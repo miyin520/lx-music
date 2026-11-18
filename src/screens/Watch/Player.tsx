@@ -131,16 +131,18 @@ const SeekBar = ({ progress, onSeek, height, dotSize, barColor, trackColor }: {
 }
 
 /**
- * 全屏歌词
+ * 全屏歌词页
  *
- * 手表屏幕小，播放页的歌词被上下控件夹在中间。全屏之后只剩歌词：
- * 当前行主题色放大，其余灰色，自动滚动居中；点任意位置或到达设定时间自动退出。
+ * 开关打开时，播放页默认就是「只有歌词」：当前行主题色放大、其余灰色、自动居中滚动。
+ * 点一下（不拖动的情况下）唤出 / 收起上下的控制条；控制条显示若干秒后自动收起。
+ * 列表本身可正常上下滑动 —— 判断拖动用 onScrollBeginDrag，避免滑动时误触发。
  */
-const FullscreenLyric = memo(({ m, onExit }: { m: ReturnType<typeof makeMetrics>, onExit: () => void }) => {
+const WatchLyricPage = memo(({ m, onTap }: { m: ReturnType<typeof makeMetrics>, onTap: () => void }) => {
   const theme = useTheme()
   const lines = useLrcSet()
   const { line } = useLrcPlay(true)
   const listRef = useRef<FlatList<{ text: string, time: number }>>(null)
+  const movedRef = useRef(false)
   const rowH = Math.max(Math.round(m.fontLg * 2), 36)
 
   useEffect(() => {
@@ -149,11 +151,12 @@ const FullscreenLyric = memo(({ m, onExit }: { m: ReturnType<typeof makeMetrics>
     listRef.current?.scrollToOffset({ offset: Math.max(index * rowH - rowH, 0), animated: true })
   }, [line, lines.length, rowH])
 
+  const handleTouchStart = useCallback(() => { movedRef.current = false }, [])
+  const handleTouchEnd = useCallback(() => { if (!movedRef.current) onTap() }, [onTap])
+  const handleScrollBegin = useCallback(() => { movedRef.current = true }, [])
+
   return (
-    <Pressable
-      style={[StyleSheet.absoluteFill, { backgroundColor: theme['c-content-background'], zIndex: 999 }]}
-      onPress={onExit}
-    >
+    <View style={{ flex: 1 }}>
       {
         lines.length
           ? <FlatList
@@ -163,6 +166,9 @@ const FullscreenLyric = memo(({ m, onExit }: { m: ReturnType<typeof makeMetrics>
               showsVerticalScrollIndicator={false}
               getItemLayout={(_data, index) => ({ length: rowH, offset: rowH * index, index })}
               contentContainerStyle={{ paddingVertical: m.height * 0.4 }}
+              onScrollBeginDrag={handleScrollBegin}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
               renderItem={({ item, index }) => (
                 <View style={{ height: rowH, justifyContent: 'center', paddingHorizontal: 8 }}>
                   <Text
@@ -178,7 +184,7 @@ const FullscreenLyric = memo(({ m, onExit }: { m: ReturnType<typeof makeMetrics>
               <Text size={m.fontMd} color={theme['c-350']}>暂无歌词</Text>
             </View>
       }
-    </Pressable>
+    </View>
   )
 })
 
@@ -255,20 +261,27 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   }, [componentId])
   const pagerRef = useRef<PagerView>(null)
   const settingRef = useRef<SettingPopupType>(null)
-  // 全屏歌词：开关打开时点击歌词页 / 封面页进入，N 秒后自动退出
-  const [fsLyric, setFsLyric] = useState(false)
+  // 全屏歌词：开关打开时默认全屏（上下控件隐藏），点一下唤出控件，N 秒后自动收起
   const fsLyricEnabled = useSettingValue('playDetail.isWatchFullscreenLyric')
   const fsLyricTimeout = useSettingValue('playDetail.watchFullscreenLyricTimeout')
+  const [controlsVisible, setControlsVisible] = useState(!fsLyricEnabled)
 
   useEffect(() => {
-    if (!fsLyric) return
-    const seconds = Math.min(Math.max(fsLyricTimeout, 3), 10)
-    const timer = setTimeout(() => { setFsLyric(false) }, seconds * 1000)
-    return () => { clearTimeout(timer) }
-  }, [fsLyric, fsLyricTimeout])
+    // 开关切换时回到「默认」状态：开启 = 只留歌词，关闭 = 控件常显
+    setControlsVisible(!fsLyricEnabled)
+  }, [fsLyricEnabled])
 
-  const handlePagePress = useCallback(() => {
-    if (fsLyricEnabled) setFsLyric(true)
+  useEffect(() => {
+    if (!fsLyricEnabled || !controlsVisible) return
+    const seconds = Math.min(Math.max(fsLyricTimeout, 3), 10)
+    const timer = setTimeout(() => { setControlsVisible(false) }, seconds * 1000)
+    return () => { clearTimeout(timer) }
+  }, [fsLyricEnabled, controlsVisible, fsLyricTimeout])
+
+  const showControls = !fsLyricEnabled || controlsVisible
+  const toggleControls = useCallback(() => {
+    if (!fsLyricEnabled) return
+    setControlsVisible(v => !v)
   }, [fsLyricEnabled])
   const timeoutRef = useRef<TimeoutExitEditModalType>(null)
   const timeInfo = useTimeInfo()
@@ -281,8 +294,9 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
       styles.container,
       { paddingTop: m.insetTop + m.cornerSafe * 0.6, paddingBottom: m.insetBottom + m.cornerSafe * 0.6 },
     ]}>
-      {/* 顶栏 */}
-      <View style={[styles.header, { height: m.header, paddingHorizontal: m.side }]}>
+      {/* 顶栏（全屏歌词模式下默认隐藏） */}
+      { showControls
+        ? <View style={[styles.header, { height: m.header, paddingHorizontal: m.side }]}>
         <TouchableOpacity
           style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
           onPress={handleBack}
@@ -328,7 +342,8 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         >
           <Icon name="slider" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
-      </View>
+          </View>
+        : null }
 
       {/* 封面 / 歌词：可左右滑动切换（原版就是这个交互） */}
       <PagerView
@@ -338,7 +353,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         onPageSelected={(e) => { setPage(e.nativeEvent.position) }}
       >
         {/* 第 1 页：封面（内容整体缩小，避免上下被圆角/页脚遮挡） */}
-        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={handlePagePress}>
+        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={toggleControls}>
           <Image
             url={musicInfo?.pic}
             style={{
@@ -353,12 +368,10 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
 
         {/* 第 2 页：歌词 —— 直接用原版实现，
             这样「歌词字体大小 / 对齐方式 / 拖拽调进度」等播放器设置才会生效 */}
-        <Pressable key="lyric" style={styles.lyricPage} onPress={handlePagePress}>
-          <LyricView />
-        </Pressable>
+        <View key="lyric" style={styles.lyricPage}>
+          { fsLyricEnabled ? <WatchLyricPage m={m} onTap={toggleControls} /> : <LyricView /> }
+        </View>
       </PagerView>
-
-      { fsLyric ? <FullscreenLyric m={m} onExit={() => { setFsLyric(false) }} /> : null }
 
       <SettingPopup ref={settingRef} direction="vertical" />
       <TimeoutExitEditModal ref={timeoutRef} timeInfo={timeInfo} />
@@ -368,8 +381,9 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
 
       <DesktopLyricEnable ref={desktopLyricRef} />
 
-      {/* 底部控制 */}
-      <View style={[styles.footer, { paddingHorizontal: m.side, paddingBottom: m.side * 0.15 }]}>
+      {/* 底部控制（全屏歌词模式下默认隐藏） */}
+      { showControls
+        ? <View style={[styles.footer, { paddingHorizontal: m.side, paddingBottom: m.side * 0.15 }]}>
         <View style={[styles.progressRow, { marginBottom: m.fontSm * 0.4 }]}>
           <Text size={m.fontSm} color={theme['c-500']}>{nowPlayTimeStr}</Text>
           <View style={{ flex: 1, marginHorizontal: m.side * 0.4 }}>
@@ -395,10 +409,12 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
             <Icon name="nextMusic" size={m.iconLg} color={theme['c-button-font']} />
           </TouchableOpacity>
         </View>
-      </View>
+          </View>
+        : null }
 
       {/* 功能键一行：桌面歌词 / 播放模式 / 评论 —— 放最底部，避免和播放条冲突 */}
-      <View style={[styles.funcRow, { paddingHorizontal: m.side, paddingBottom: m.side * 0.15 }]}>
+      { showControls
+        ? <View style={[styles.funcRow, { paddingHorizontal: m.side, paddingBottom: m.side * 0.15 }]}>
         <TouchableOpacity style={{ width: m.touch, height: m.touch * 0.9, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={toggleDesktopLyric}>
           <Icon name={enabledDesktopLyric ? 'lyric-on' : 'lyric-off'} size={m.iconMd} color={enabledDesktopLyric ? theme['c-primary'] : theme['c-350']} />
         </TouchableOpacity>
@@ -408,7 +424,8 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         <TouchableOpacity style={{ width: m.touch, height: m.touch * 0.9, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={openComment}>
           <Icon name="comment" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
-      </View>
+          </View>
+        : null }
     </View>
     </WatchBackground>
   )
