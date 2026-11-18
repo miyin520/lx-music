@@ -20,6 +20,10 @@ const defaultSetting: LX.AppSetting = {
   'common.watchCornerRadius': -1,
   // 申请全面屏（隐藏状态栏与手势条）
   'common.watchFullscreen': false,
+  // 歌曲界面全屏：点击歌词页进入纯歌词界面
+  'playDetail.isWatchFullscreenLyric': false,
+  // 全屏歌词自动退出时间（秒）
+  'playDetail.watchFullscreenLyricTimeout': 5,
   // 界面形态：auto = 按屏幕尺寸自动识别；phone / watch = 用户手动指定
   'common.watchRailSide': 'left',
   'common.watchRailExit': true,

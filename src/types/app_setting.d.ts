@@ -88,6 +88,16 @@ declare global {
       'common.watchFullscreen': boolean
 
       /**
+       * 歌曲界面全屏：点击歌词页进入纯歌词界面
+       */
+      'playDetail.isWatchFullscreenLyric': boolean
+
+      /**
+       * 全屏歌词自动退出时间（秒，3~10）
+       */
+      'playDetail.watchFullscreenLyricTimeout': number
+
+      /**
        * 界面形态：自动识别 / 手机版 / 手表版
        */
 

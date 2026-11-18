@@ -12,11 +12,25 @@ import { toOldMusicInfo } from '@/utils'
 import { clearMusicUrlByMusic } from '@/utils/data'
 
 export const handlePlay = (musicInfo: LX.Music.MusicInfoOnline) => {
-  void addListMusics(LIST_IDS.DEFAULT, [musicInfo], settingState.setting['list.addMusicLocationType']).then(() => {
+  // 说明：addListMusics 会先把歌曲写进内存列表，再把整个列表落盘。
+  // 以前是 await 整个流程（含落盘）才开始播放，手表上存储慢，
+  // 体感就是「点了之后半天不响」。这里改成：内存里一出现这首歌就立刻播放，
+  // 落盘交给后台自己继续。
+  let played = false
+  const tryPlay = () => {
+    if (played) return
     const index = getListMusicSync(LIST_IDS.DEFAULT).findIndex(m => m.id == musicInfo.id)
     if (index < 0) return
+    played = true
     void playList(LIST_IDS.DEFAULT, index)
+  }
+  const task = addListMusics(LIST_IDS.DEFAULT, [musicInfo], settingState.setting['list.addMusicLocationType'])
+  // 内存写入在下一两个微任务内就完成了，先抢在落盘之前播放
+  void Promise.resolve().then(() => {
+    tryPlay()
+    void Promise.resolve().then(tryPlay)
   })
+  void task.then(tryPlay)
 }
 export const handlePlayLater = (musicInfo: LX.Music.MusicInfoOnline, selectedList: LX.Music.MusicInfoOnline[], onCancelSelect: () => void) => {
   if (selectedList.length) {

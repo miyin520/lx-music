@@ -294,6 +294,8 @@
   "setting_basic_fullscreen_tip": "部分介面需要重啟應用後才能完全鋪滿，是否立即重啟？",
   "setting_basic_fullscreen_restart": "立即重啟",
   "setting_basic_fullscreen_later": "稍後",
+  "play_detail_setting_watch_fullscreen": "歌曲介面全螢幕（點擊歌詞頁進入）",
+  "play_detail_setting_watch_fullscreen_timeout": "自動退出時間",
   "setting_basic_home_page_scroll": "啟用豎屏首頁橫向滾動",
   "setting_basic_lang": "語言",
   "setting_basic_share_type": "分享方式",

@@ -5,7 +5,7 @@
  * 顶栏（返回/歌名/收藏）/ 中间歌词 / 底部进度 + 三键。
  */
 import { memo, useCallback, useMemo, useRef, useEffect, useState } from 'react'
-import { View, FlatList, TouchableOpacity, PanResponder } from 'react-native'
+import { View, FlatList, Pressable, StyleSheet, TouchableOpacity, PanResponder } from 'react-native'
 import PagerView from 'react-native-pager-view'
 
 import Text from '@/components/common/Text'
@@ -34,6 +34,7 @@ import { toast } from '@/utils/tools'
 import { getDuration } from '@/plugins/player'
 import { updateSetting } from '@/core/common'
 import listState from '@/store/list/state'
+import { useLrcPlay, useLrcSet } from '@/plugins/lyric'
 import SettingPopup, { type SettingPopupType } from '@/screens/PlayDetail/components/SettingPopup'
 import TimeoutExitEditModal, { type TimeoutExitEditModalType, useTimeInfo } from '@/components/TimeoutExitEditModal'
 import Image from '@/components/common/Image'
@@ -129,6 +130,58 @@ const SeekBar = ({ progress, onSeek, height, dotSize, barColor, trackColor }: {
   )
 }
 
+/**
+ * 全屏歌词
+ *
+ * 手表屏幕小，播放页的歌词被上下控件夹在中间。全屏之后只剩歌词：
+ * 当前行主题色放大，其余灰色，自动滚动居中；点任意位置或到达设定时间自动退出。
+ */
+const FullscreenLyric = memo(({ m, onExit }: { m: ReturnType<typeof makeMetrics>, onExit: () => void }) => {
+  const theme = useTheme()
+  const lines = useLrcSet()
+  const { line } = useLrcPlay(true)
+  const listRef = useRef<FlatList<{ text: string, time: number }>>(null)
+  const rowH = Math.max(Math.round(m.fontLg * 2), 36)
+
+  useEffect(() => {
+    if (!lines.length) return
+    const index = Math.max(0, Math.min(line, lines.length - 1))
+    listRef.current?.scrollToOffset({ offset: Math.max(index * rowH - rowH, 0), animated: true })
+  }, [line, lines.length, rowH])
+
+  return (
+    <Pressable
+      style={[StyleSheet.absoluteFill, { backgroundColor: theme['c-content-background'], zIndex: 999 }]}
+      onPress={onExit}
+    >
+      {
+        lines.length
+          ? <FlatList
+              ref={listRef}
+              data={lines as any}
+              keyExtractor={(_item, index) => String(index)}
+              showsVerticalScrollIndicator={false}
+              getItemLayout={(_data, index) => ({ length: rowH, offset: rowH * index, index })}
+              contentContainerStyle={{ paddingVertical: m.height * 0.4 }}
+              renderItem={({ item, index }) => (
+                <View style={{ height: rowH, justifyContent: 'center', paddingHorizontal: 8 }}>
+                  <Text
+                    size={index == line ? m.fontLg : m.fontMd}
+                    color={index == line ? theme['c-primary'] : theme['c-350']}
+                    style={{ textAlign: 'center' }}
+                    numberOfLines={2}
+                  >{item.text || ' '}</Text>
+                </View>
+              )}
+            />
+          : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Text size={m.fontMd} color={theme['c-350']}>暂无歌词</Text>
+            </View>
+      }
+    </Pressable>
+  )
+})
+
 const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const theme = useTheme()
   const win = useWindowSize()
@@ -202,6 +255,21 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   }, [componentId])
   const pagerRef = useRef<PagerView>(null)
   const settingRef = useRef<SettingPopupType>(null)
+  // 全屏歌词：开关打开时点击歌词页 / 封面页进入，N 秒后自动退出
+  const [fsLyric, setFsLyric] = useState(false)
+  const fsLyricEnabled = useSettingValue('playDetail.isWatchFullscreenLyric')
+  const fsLyricTimeout = useSettingValue('playDetail.watchFullscreenLyricTimeout')
+
+  useEffect(() => {
+    if (!fsLyric) return
+    const seconds = Math.min(Math.max(fsLyricTimeout, 3), 10)
+    const timer = setTimeout(() => { setFsLyric(false) }, seconds * 1000)
+    return () => { clearTimeout(timer) }
+  }, [fsLyric, fsLyricTimeout])
+
+  const handlePagePress = useCallback(() => {
+    if (fsLyricEnabled) setFsLyric(true)
+  }, [fsLyricEnabled])
   const timeoutRef = useRef<TimeoutExitEditModalType>(null)
   const timeInfo = useTimeInfo()
 
@@ -270,7 +338,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         onPageSelected={(e) => { setPage(e.nativeEvent.position) }}
       >
         {/* 第 1 页：封面（内容整体缩小，避免上下被圆角/页脚遮挡） */}
-        <View key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]}>
+        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={handlePagePress}>
           <Image
             url={musicInfo?.pic}
             style={{
@@ -281,14 +349,16 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
           />
           <Text size={m.fontSm} numberOfLines={1} style={{ marginTop: m.fontSm * 0.6 }}>{musicInfo?.name || '未在播放'}</Text>
           <Text size={m.fontSm} numberOfLines={1} color={theme['c-500']} style={{ marginTop: m.fontSm * 0.15 }}>{musicInfo?.singer ?? ''}</Text>
-        </View>
+        </Pressable>
 
         {/* 第 2 页：歌词 —— 直接用原版实现，
             这样「歌词字体大小 / 对齐方式 / 拖拽调进度」等播放器设置才会生效 */}
-        <View key="lyric" style={styles.lyricPage}>
+        <Pressable key="lyric" style={styles.lyricPage} onPress={handlePagePress}>
           <LyricView />
-        </View>
+        </Pressable>
       </PagerView>
+
+      { fsLyric ? <FullscreenLyric m={m} onExit={() => { setFsLyric(false) }} /> : null }
 
       <SettingPopup ref={settingRef} direction="vertical" />
       <TimeoutExitEditModal ref={timeoutRef} timeInfo={timeInfo} />
@@ -363,6 +433,8 @@ const styles = createStyle({
   },
   lyricPage: {
     flex: 1,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   picPage: {
     flex: 1,
