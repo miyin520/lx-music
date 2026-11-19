@@ -25,6 +25,7 @@ import { createStyle } from '@/utils/tools'
 import LyricView from '@/screens/PlayDetail/Vertical/Lyric'
 import { makeMetrics } from './metrics'
 import { useWatchFullscreen } from './useFullscreen'
+import { setFullscreen } from '@/utils/nativeModules/utils'
 import WatchBackground from './WatchBackground'
 import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
 import DesktopLyricEnable, { type DesktopLyricEnableType } from '@/components/DesktopLyricEnable'
@@ -218,6 +219,8 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const fsLyricEnabled = useSettingValue('playDetail.isWatchFullscreenLyric')
   const fsLyricTimeout = useSettingValue('playDetail.watchFullscreenLyricTimeout')
   const [controlsVisible, setControlsVisible] = useState(!fsLyricEnabled)
+  // 播放器设置面板打开期间强制退出全屏（面板 + 全面屏叠在一起容易卡死）
+  const [settingOpen, setSettingOpen] = useState(false)
 
   useEffect(() => {
     setControlsVisible(!fsLyricEnabled)
@@ -230,7 +233,13 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
     return () => { clearTimeout(timer) }
   }, [fsLyricEnabled, controlsVisible, fsLyricTimeout])
 
-  const showControls = !fsLyricEnabled || controlsVisible
+  const showControls = !fsLyricEnabled || controlsVisible || settingOpen
+
+  useEffect(() => {
+    if (!fsLyricEnabled) return
+    // 打开设置面板：退出全屏；关闭面板：恢复全屏
+    setFullscreen(!settingOpen)
+  }, [settingOpen, fsLyricEnabled])
 
   const toggleControls = useCallback(() => {
     if (!fsLyricEnabled) return
@@ -305,7 +314,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         <TouchableOpacity
           style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
           activeOpacity={0.6}
-          onPress={() => { settingRef.current?.show() }}
+          onPress={() => { setSettingOpen(true); settingRef.current?.show() }}
         >
           <Icon name="slider" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
@@ -346,7 +355,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         </View>
       </PagerView>
 
-      <SettingPopup ref={settingRef} direction="vertical" />
+      <SettingPopup ref={settingRef} direction="vertical" onHide={() => { setSettingOpen(false) }} />
       <TimeoutExitEditModal ref={timeoutRef} timeInfo={timeInfo} />
 
       {/* 原版「添加歌曲到列表」弹窗 */}
