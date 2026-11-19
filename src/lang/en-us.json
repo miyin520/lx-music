@@ -294,6 +294,8 @@
   "setting_basic_fullscreen_tip": "Some screens need a restart to fill the display completely. Restart now?",
   "setting_basic_fullscreen_restart": "Restart now",
   "setting_basic_fullscreen_later": "Later",
+  "setting_basic_fullscreen_off": "Fullscreen turned off",
+  "setting_basic_fullscreen_on": "Fullscreen turned on",
   "play_detail_setting_watch_fullscreen": "Fullscreen lyric page (tap lyric page)",
   "play_detail_setting_watch_fullscreen_timeout": "Auto exit after",
   "setting_basic_home_page_scroll": "Allow horizontal scrolling on vertical homepage",

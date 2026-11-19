@@ -34,7 +34,6 @@ import { toast } from '@/utils/tools'
 import { getDuration } from '@/plugins/player'
 import { updateSetting } from '@/core/common'
 import listState from '@/store/list/state'
-import { useLrcPlay, useLrcSet } from '@/plugins/lyric'
 import SettingPopup, { type SettingPopupType } from '@/screens/PlayDetail/components/SettingPopup'
 import TimeoutExitEditModal, { type TimeoutExitEditModalType, useTimeInfo } from '@/components/TimeoutExitEditModal'
 import Image from '@/components/common/Image'
@@ -130,64 +129,6 @@ const SeekBar = ({ progress, onSeek, height, dotSize, barColor, trackColor }: {
   )
 }
 
-/**
- * 全屏歌词页
- *
- * 开关打开时，播放页默认就是「只有歌词」：当前行主题色放大、其余灰色、自动居中滚动。
- * 点一下（不拖动的情况下）唤出 / 收起上下的控制条；控制条显示若干秒后自动收起。
- * 列表本身可正常上下滑动 —— 判断拖动用 onScrollBeginDrag，避免滑动时误触发。
- */
-const WatchLyricPage = memo(({ m, onTap }: { m: ReturnType<typeof makeMetrics>, onTap: () => void }) => {
-  const theme = useTheme()
-  const lines = useLrcSet()
-  const { line } = useLrcPlay(true)
-  const listRef = useRef<FlatList<{ text: string, time: number }>>(null)
-  const movedRef = useRef(false)
-  const rowH = Math.max(Math.round(m.fontLg * 2), 36)
-
-  useEffect(() => {
-    if (!lines.length) return
-    const index = Math.max(0, Math.min(line, lines.length - 1))
-    listRef.current?.scrollToOffset({ offset: Math.max(index * rowH - rowH, 0), animated: true })
-  }, [line, lines.length, rowH])
-
-  const handleTouchStart = useCallback(() => { movedRef.current = false }, [])
-  const handleTouchEnd = useCallback(() => { if (!movedRef.current) onTap() }, [onTap])
-  const handleScrollBegin = useCallback(() => { movedRef.current = true }, [])
-
-  return (
-    <View style={{ flex: 1 }}>
-      {
-        lines.length
-          ? <FlatList
-              ref={listRef}
-              data={lines as any}
-              keyExtractor={(_item, index) => String(index)}
-              showsVerticalScrollIndicator={false}
-              getItemLayout={(_data, index) => ({ length: rowH, offset: rowH * index, index })}
-              contentContainerStyle={{ paddingVertical: m.height * 0.4 }}
-              onScrollBeginDrag={handleScrollBegin}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-              renderItem={({ item, index }) => (
-                <View style={{ height: rowH, justifyContent: 'center', paddingHorizontal: 8 }}>
-                  <Text
-                    size={index == line ? m.fontLg : m.fontMd}
-                    color={index == line ? theme['c-primary'] : theme['c-350']}
-                    style={{ textAlign: 'center' }}
-                    numberOfLines={2}
-                  >{item.text || ' '}</Text>
-                </View>
-              )}
-            />
-          : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Text size={m.fontMd} color={theme['c-350']}>暂无歌词</Text>
-            </View>
-      }
-    </View>
-  )
-})
-
 const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const theme = useTheme()
   const win = useWindowSize()
@@ -260,29 +201,46 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
     navigations.pushCommentScreen(componentId)
   }, [componentId])
   const pagerRef = useRef<PagerView>(null)
-  const settingRef = useRef<SettingPopupType>(null)
-  // 全屏歌词：开关打开时默认全屏（上下控件隐藏），点一下唤出控件，N 秒后自动收起
+  // PagerView 实际高度：封面按它收缩，避免歌名/歌手被挤出可视区
+  const [pagerH, setPagerH] = useState(0)
+  // 按键尺寸：绝对上限 + 屏高比例双保险。
+  // 只按屏高比例封顶在手机上永远不生效（m.btnLg 本身就更小），所以这里给死上限。
+  const playBtnSize = Math.min(m.btnLg, 60, Math.round(m.height * 0.16))
+  const sideBtnSize = Math.min(m.touch, 44, Math.round(playBtnSize * 0.72))
+  const funcBtnSize = Math.min(m.touch, 38, Math.round(m.height * 0.105))
+  const coverSize = useMemo(() => {
+    if (!(pagerH > 0)) return m.cover
+    const room = pagerH - m.fontSm * 4.2
+    return Math.max(Math.min(m.cover, room), 48)
+  }, [pagerH, m.cover, m.fontSm])
+  // 歌曲界面全屏：开关打开即默认全屏（只剩歌词，控件隐藏）；
+  // 点一下唤出上下控件，N 秒（1~10）后再自动收起回到全屏
   const fsLyricEnabled = useSettingValue('playDetail.isWatchFullscreenLyric')
   const fsLyricTimeout = useSettingValue('playDetail.watchFullscreenLyricTimeout')
   const [controlsVisible, setControlsVisible] = useState(!fsLyricEnabled)
 
   useEffect(() => {
-    // 开关切换时回到「默认」状态：开启 = 只留歌词，关闭 = 控件常显
     setControlsVisible(!fsLyricEnabled)
   }, [fsLyricEnabled])
 
   useEffect(() => {
     if (!fsLyricEnabled || !controlsVisible) return
-    const seconds = Math.min(Math.max(fsLyricTimeout, 3), 10)
+    const seconds = Math.min(Math.max(fsLyricTimeout, 1), 10)
     const timer = setTimeout(() => { setControlsVisible(false) }, seconds * 1000)
     return () => { clearTimeout(timer) }
   }, [fsLyricEnabled, controlsVisible, fsLyricTimeout])
 
   const showControls = !fsLyricEnabled || controlsVisible
-  const toggleControls = useCallback(() => {
+
+  // 用「按下 → 抬起」的时长判断是不是点击（拖动歌词时不会被当成点击唤出控件）
+  const touchStartAt = useRef(0)
+  const handleTouchStart = useCallback(() => { touchStartAt.current = Date.now() }, [])
+  const handleTouchEnd = useCallback(() => {
     if (!fsLyricEnabled) return
+    if (Date.now() - touchStartAt.current > 260) return
     setControlsVisible(v => !v)
   }, [fsLyricEnabled])
+  const settingRef = useRef<SettingPopupType>(null)
   const timeoutRef = useRef<TimeoutExitEditModalType>(null)
   const timeInfo = useTimeInfo()
 
@@ -292,9 +250,13 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
     <WatchBackground>
     <View style={[
       styles.container,
-      { paddingTop: m.insetTop + m.cornerSafe * 0.6, paddingBottom: m.insetBottom + m.cornerSafe * 0.6 },
+      {
+        paddingTop: m.insetTop + m.cornerSafe * 0.6,
+        // 手势条读不到时兜底 12dp，保证最下面一行不被系统条压住
+        paddingBottom: Math.max(m.insetBottom, 14),
+      },
     ]}>
-      {/* 顶栏（全屏歌词模式下默认隐藏） */}
+      {/* 顶栏（全屏模式下隐藏） */}
       { showControls
         ? <View style={[styles.header, { height: m.header, paddingHorizontal: m.side }]}>
         <TouchableOpacity
@@ -350,16 +312,17 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         ref={pagerRef}
         style={styles.lyric}
         initialPage={1}
+        onLayout={(e) => { setPagerH(e.nativeEvent.layout.height) }}
         onPageSelected={(e) => { setPage(e.nativeEvent.position) }}
       >
         {/* 第 1 页：封面（内容整体缩小，避免上下被圆角/页脚遮挡） */}
-        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={toggleControls}>
+        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={handleTouchEnd}>
           <Image
             url={musicInfo?.pic}
             style={{
-              width: m.cover,
-              height: m.cover,
-              borderRadius: m.cover * 0.1,
+              width: coverSize,
+              height: coverSize,
+              borderRadius: coverSize * 0.1,
             }}
           />
           <Text size={m.fontSm} numberOfLines={1} style={{ marginTop: m.fontSm * 0.6 }}>{musicInfo?.name || '未在播放'}</Text>
@@ -368,8 +331,13 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
 
         {/* 第 2 页：歌词 —— 直接用原版实现，
             这样「歌词字体大小 / 对齐方式 / 拖拽调进度」等播放器设置才会生效 */}
-        <View key="lyric" style={styles.lyricPage}>
-          { fsLyricEnabled ? <WatchLyricPage m={m} onTap={toggleControls} /> : <LyricView /> }
+        <View
+          key="lyric"
+          style={styles.lyricPage}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <LyricView />
         </View>
       </PagerView>
 
@@ -381,7 +349,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
 
       <DesktopLyricEnable ref={desktopLyricRef} />
 
-      {/* 底部控制（全屏歌词模式下默认隐藏） */}
+      {/* 底部控制（全屏模式下隐藏） */}
       { showControls
         ? <View style={[styles.footer, { paddingHorizontal: m.side, paddingBottom: m.side * 0.15 }]}>
         <View style={[styles.progressRow, { marginBottom: m.fontSm * 0.4 }]}>
@@ -399,30 +367,30 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
           <Text size={m.fontSm} color={theme['c-500']}>{maxPlayTimeStr}</Text>
         </View>
         <View style={styles.buttons}>
-          <TouchableOpacity style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }} onPress={() => { void playPrev() }} activeOpacity={0.5}>
-            <Icon name="prevMusic" size={m.iconLg} color={theme['c-button-font']} />
+          <TouchableOpacity style={{ width: sideBtnSize, height: sideBtnSize, alignItems: 'center', justifyContent: 'center' }} onPress={() => { void playPrev() }} activeOpacity={0.5}>
+            <Icon name="prevMusic" size={sideBtnSize * 0.7} color={theme['c-button-font']} />
           </TouchableOpacity>
-          <TouchableOpacity style={{ width: m.btnLg, height: m.btnLg, alignItems: 'center', justifyContent: 'center' }} onPress={togglePlay} activeOpacity={0.5}>
-            <Icon name={isPlay ? 'pause' : 'play'} size={m.iconLg * 1.25} color={theme['c-button-font']} />
+          <TouchableOpacity style={{ width: playBtnSize, height: playBtnSize, alignItems: 'center', justifyContent: 'center' }} onPress={togglePlay} activeOpacity={0.5}>
+            <Icon name={isPlay ? 'pause' : 'play'} size={playBtnSize * 0.72} color={theme['c-button-font']} />
           </TouchableOpacity>
-          <TouchableOpacity style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }} onPress={() => { void playNext() }} activeOpacity={0.5}>
-            <Icon name="nextMusic" size={m.iconLg} color={theme['c-button-font']} />
+          <TouchableOpacity style={{ width: sideBtnSize, height: sideBtnSize, alignItems: 'center', justifyContent: 'center' }} onPress={() => { void playNext() }} activeOpacity={0.5}>
+            <Icon name="nextMusic" size={sideBtnSize * 0.7} color={theme['c-button-font']} />
           </TouchableOpacity>
         </View>
           </View>
         : null }
 
-      {/* 功能键一行：桌面歌词 / 播放模式 / 评论 —— 放最底部，避免和播放条冲突 */}
+      {/* 功能键一行：桌面歌词 / 播放模式 / 评论（全屏模式下隐藏） */}
       { showControls
         ? <View style={[styles.funcRow, { paddingHorizontal: m.side, paddingBottom: m.side * 0.15 }]}>
-        <TouchableOpacity style={{ width: m.touch, height: m.touch * 0.9, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={toggleDesktopLyric}>
-          <Icon name={enabledDesktopLyric ? 'lyric-on' : 'lyric-off'} size={m.iconMd} color={enabledDesktopLyric ? theme['c-primary'] : theme['c-350']} />
+        <TouchableOpacity style={{ width: funcBtnSize, height: funcBtnSize, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={toggleDesktopLyric}>
+          <Icon name={enabledDesktopLyric ? 'lyric-on' : 'lyric-off'} size={funcBtnSize * 0.66} color={enabledDesktopLyric ? theme['c-primary'] : theme['c-350']} />
         </TouchableOpacity>
-        <TouchableOpacity style={{ width: m.touch, height: m.touch * 0.9, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={toggleNextPlayMode}>
-          <Icon name={playModeIcon} size={m.iconMd} color={theme['c-350']} />
+        <TouchableOpacity style={{ width: funcBtnSize, height: funcBtnSize, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={toggleNextPlayMode}>
+          <Icon name={playModeIcon} size={funcBtnSize * 0.66} color={theme['c-350']} />
         </TouchableOpacity>
-        <TouchableOpacity style={{ width: m.touch, height: m.touch * 0.9, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={openComment}>
-          <Icon name="comment" size={m.iconMd} color={theme['c-350']} />
+        <TouchableOpacity style={{ width: funcBtnSize, height: funcBtnSize, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.6} onPress={openComment}>
+          <Icon name="comment" size={funcBtnSize * 0.66} color={theme['c-350']} />
         </TouchableOpacity>
           </View>
         : null }
@@ -450,8 +418,6 @@ const styles = createStyle({
   },
   lyricPage: {
     flex: 1,
-    paddingTop: 4,
-    paddingBottom: 4,
   },
   picPage: {
     flex: 1,
@@ -464,6 +430,8 @@ const styles = createStyle({
   },
   footer: {
     justifyContent: 'flex-end',
+    flexGrow: 0,
+    flexShrink: 0,
   },
   progressRow: {
     flexDirection: 'row',
@@ -490,6 +458,8 @@ const styles = createStyle({
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   funcRow: {
+    flexGrow: 0,
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-evenly',

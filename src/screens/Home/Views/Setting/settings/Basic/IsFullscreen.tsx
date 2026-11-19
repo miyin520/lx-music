@@ -1,11 +1,11 @@
-import { memo, useRef } from 'react'
+import { memo } from 'react'
 
 import CheckBoxItem from '../../components/CheckBoxItem'
 import { useI18n } from '@/lang'
 import { updateSetting } from '@/core/common'
 import { useSettingValue } from '@/store/setting/hook'
-import { setFullscreen, restartApp } from '@/utils/nativeModules/utils'
-import ConfirmDialog, { type ConfirmType } from '@/screens/Watch/ConfirmDialog'
+import { setFullscreen } from '@/utils/nativeModules/utils'
+import { toast } from '@/utils/tools'
 
 /**
  * 申请全面屏（沉浸式）
@@ -16,21 +16,14 @@ import ConfirmDialog, { type ConfirmType } from '@/screens/Watch/ConfirmDialog'
  */
 export default memo(() => {
   const t = useI18n()
-  const confirmRef = useRef<ConfirmType>(null)
   const enabled = useSettingValue('common.watchFullscreen')
 
   const handleChange = (check: boolean) => {
     void updateSetting({ 'common.watchFullscreen': check })
     // 先立刻生效，让用户马上看到效果
     setFullscreen(check)
-    void confirmRef.current?.show({
-      title: t('setting_basic_fullscreen_changed'),
-      message: t('setting_basic_fullscreen_tip'),
-      okText: t('setting_basic_fullscreen_restart'),
-      cancelText: t('setting_basic_fullscreen_later'),
-    }).then((ok) => {
-      if (ok) restartApp()
-    })
+    // 直接生效，不再提示重启（实测不重启也没问题）
+    toast(check ? t('setting_basic_fullscreen_on') : t('setting_basic_fullscreen_off'))
   }
 
   return (
@@ -40,7 +33,6 @@ export default memo(() => {
         label={t('setting_basic_fullscreen')}
         onChange={handleChange}
       />
-      <ConfirmDialog ref={confirmRef} />
     </>
   )
 })
