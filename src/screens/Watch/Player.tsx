@@ -25,7 +25,6 @@ import { createStyle } from '@/utils/tools'
 import LyricView from '@/screens/PlayDetail/Vertical/Lyric'
 import { makeMetrics } from './metrics'
 import { useWatchFullscreen } from './useFullscreen'
-import { setFullscreen } from '@/utils/nativeModules/utils'
 import WatchBackground from './WatchBackground'
 import MusicAddModal, { type MusicAddModalType } from '@/components/MusicAddModal'
 import DesktopLyricEnable, { type DesktopLyricEnableType } from '@/components/DesktopLyricEnable'
@@ -234,12 +233,6 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   }, [fsLyricEnabled, controlsVisible, fsLyricTimeout])
 
   const showControls = !fsLyricEnabled || controlsVisible || settingOpen
-
-  useEffect(() => {
-    if (!fsLyricEnabled) return
-    // 打开设置面板：退出全屏；关闭面板：恢复全屏
-    setFullscreen(!settingOpen)
-  }, [settingOpen, fsLyricEnabled])
 
   const toggleControls = useCallback(() => {
     if (!fsLyricEnabled) return
