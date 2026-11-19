@@ -232,14 +232,19 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
 
   const showControls = !fsLyricEnabled || controlsVisible
 
-  // 用「按下 → 抬起」的时长判断是不是点击（拖动歌词时不会被当成点击唤出控件）
+  const toggleControls = useCallback(() => {
+    if (!fsLyricEnabled) return
+    setControlsVisible(v => !v)
+  }, [fsLyricEnabled])
+
+  // 歌词页是列表，用「按下 → 抬起」的时长判断是不是点击（拖动歌词时不算）
   const touchStartAt = useRef(0)
   const handleTouchStart = useCallback(() => { touchStartAt.current = Date.now() }, [])
   const handleTouchEnd = useCallback(() => {
     if (!fsLyricEnabled) return
     if (Date.now() - touchStartAt.current > 260) return
-    setControlsVisible(v => !v)
-  }, [fsLyricEnabled])
+    toggleControls()
+  }, [fsLyricEnabled, toggleControls])
   const settingRef = useRef<SettingPopupType>(null)
   const timeoutRef = useRef<TimeoutExitEditModalType>(null)
   const timeInfo = useTimeInfo()
@@ -316,7 +321,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         onPageSelected={(e) => { setPage(e.nativeEvent.position) }}
       >
         {/* 第 1 页：封面（内容整体缩小，避免上下被圆角/页脚遮挡） */}
-        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={handleTouchEnd}>
+        <Pressable key="pic" style={[styles.picPage, { paddingHorizontal: m.side }]} onPress={toggleControls}>
           <Image
             url={musicInfo?.pic}
             style={{
