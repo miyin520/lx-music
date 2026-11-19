@@ -26,7 +26,7 @@ export default memo(() => {
   }
 
   const openHomePage = () => {
-    void openUrl('https://github.com/lyswhut/lx-music-mobile#readme')
+    void openUrl('https://github.com/lyswhut/lx-music-mobile')
   }
   const openGHReleasePage = () => {
     void openUrl('https://github.com/miyin520/lx-music/releases')

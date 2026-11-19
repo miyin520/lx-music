@@ -8,12 +8,14 @@ import Slider, { type SliderProps } from '@/components/common/Slider'
 import { updateSetting } from '@/core/common'
 import { useI18n } from '@/lang'
 import styles from './style'
+import { usePopupScrollLock } from '../scrollLock'
 
 
 const LrcFontSize = ({ direction }: {
   direction: 'horizontal' | 'vertical'
 }) => {
   const theme = useTheme()
+  const lockScroll = usePopupScrollLock()
   const settingKey = direction == 'horizontal' ? 'playDetail.horizontal.style.lrcFontSize' : 'playDetail.vertical.style.lrcFontSize'
   const lrcFontSize = useSettingValue(settingKey)
   const [sliderSize, setSliderSize] = useState(lrcFontSize)
@@ -21,12 +23,14 @@ const LrcFontSize = ({ direction }: {
   const t = useI18n()
 
   const handleSlidingStart: SliderProps['onSlidingStart'] = value => {
+    lockScroll(true)
     setSliding(true)
   }
   const handleValueChange: SliderProps['onValueChange'] = value => {
     setSliderSize(value)
   }
   const handleSlidingComplete: SliderProps['onSlidingComplete'] = value => {
+    lockScroll(false)
     setSliding(false)
     if (lrcFontSize == value) return
     updateSetting({ [settingKey]: value })

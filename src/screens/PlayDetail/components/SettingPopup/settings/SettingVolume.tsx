@@ -8,17 +8,20 @@ import Slider, { type SliderProps } from '@/components/common/Slider'
 import { updateSetting } from '@/core/common'
 import { useI18n } from '@/lang'
 import styles from './style'
+import { usePopupScrollLock } from '../scrollLock'
 import { setVolume } from '@/plugins/player'
 
 
 const Volume = () => {
   const theme = useTheme()
+  const lockScroll = usePopupScrollLock()
   const volume = Math.trunc(useSettingValue('player.volume') * 100)
   const [sliderSize, setSliderSize] = useState(volume)
   const [isSliding, setSliding] = useState(false)
   const t = useI18n()
 
   const handleSlidingStart: SliderProps['onSlidingStart'] = value => {
+    lockScroll(true)
     setSliding(true)
   }
   const handleValueChange: SliderProps['onValueChange'] = value => {
@@ -27,6 +30,7 @@ const Volume = () => {
     void setVolume(value / 100)
   }
   const handleSlidingComplete: SliderProps['onSlidingComplete'] = value => {
+    lockScroll(false)
     setSliding(false)
     value = Math.trunc(value)
     if (volume == value) return

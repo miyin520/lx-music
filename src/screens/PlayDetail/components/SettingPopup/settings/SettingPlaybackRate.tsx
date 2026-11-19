@@ -8,6 +8,7 @@ import Slider, { type SliderProps } from '@/components/common/Slider'
 import { updateSetting } from '@/core/common'
 import { useI18n } from '@/lang'
 import styles from './style'
+import { usePopupScrollLock } from '../scrollLock'
 import { setPlaybackRate, updateMetaData } from '@/plugins/player'
 import { setPlaybackRate as setLyricPlaybackRate } from '@/core/lyric'
 import ButtonPrimary from '@/components/common/ButtonPrimary'
@@ -19,12 +20,14 @@ const MAX_VALUE = 200
 
 export default () => {
   const theme = useTheme()
+  const lockScroll = usePopupScrollLock()
   const playbackRate = Math.trunc(useSettingValue('player.playbackRate') * 100)
   const [sliderSize, setSliderSize] = useState(playbackRate)
   const [isSliding, setSliding] = useState(false)
   const t = useI18n()
 
   const handleSlidingStart: SliderProps['onSlidingStart'] = value => {
+    lockScroll(true)
     setSliding(true)
   }
   const handleValueChange: SliderProps['onValueChange'] = value => {
@@ -33,6 +36,7 @@ export default () => {
     void setPlaybackRate(parseFloat((value / 100).toFixed(2)))
   }
   const handleSlidingComplete: SliderProps['onSlidingComplete'] = value => {
+    lockScroll(false)
     setSliding(false)
     value = Math.trunc(value)
     const rate = value / 100

@@ -1,5 +1,6 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useState, useCallback } from 'react'
 import { ScrollView, View } from 'react-native'
+import { PopupScrollLockContext } from './scrollLock'
 import Popup, { type PopupType, type PopupProps } from '@/components/common/Popup'
 import { useI18n } from '@/lang'
 
@@ -20,6 +21,9 @@ export interface SettingPopupType {
 
 export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...props }, ref) => {
   const [visible, setVisible] = useState(false)
+  // 拖滑条时临时关掉面板滚动，避免和原生 Slider 抢手势导致整屏卡死
+  const [scrollEnabled, setScrollEnabled] = useState(true)
+  const handleScrollLock = useCallback((locked: boolean) => { setScrollEnabled(!locked) }, [])
   const popupRef = useRef<PopupType>(null)
   // console.log('render import export')
   const t = useI18n()
@@ -41,8 +45,11 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
     visible
       ? (
         <Popup ref={popupRef} title={t('play_detail_setting_title')} {...props}>
-          <ScrollView>
-            <View onStartShouldSetResponder={() => true}>
+          <PopupScrollLockContext.Provider value={handleScrollLock}>
+          <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={{ paddingBottom: 24 }}>
+            {/* 这层 View 原来用 onStartShouldSetResponder 抢 responder，
+                会让面板里的勾选框完全点不动（滑条不受影响），所以去掉 */}
+            <View>
               <SettingLyricProgress />
               <SettingVolume />
               <SettingPlaybackRate />
@@ -51,6 +58,7 @@ export default forwardRef<SettingPopupType, SettingPopupProps>(({ direction, ...
               <SettingWatchFullscreen />
             </View>
           </ScrollView>
+          </PopupScrollLockContext.Provider>
         </Popup>
         )
       : null
