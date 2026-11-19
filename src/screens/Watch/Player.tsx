@@ -5,7 +5,7 @@
  * 顶栏（返回/歌名/收藏）/ 中间歌词 / 底部进度 + 三键。
  */
 import { memo, useCallback, useMemo, useRef, useEffect, useState } from 'react'
-import { View, FlatList, Pressable, StyleSheet, TouchableOpacity, PanResponder } from 'react-native'
+import { View, FlatList, Pressable, ScrollView, StyleSheet, TouchableOpacity, PanResponder } from 'react-native'
 import PagerView from 'react-native-pager-view'
 
 import Text from '@/components/common/Text'
@@ -34,7 +34,12 @@ import { toast } from '@/utils/tools'
 import { getDuration } from '@/plugins/player'
 import { updateSetting } from '@/core/common'
 import listState from '@/store/list/state'
-import SettingPopup, { type SettingPopupType } from '@/screens/PlayDetail/components/SettingPopup'
+import SettingLyricProgress from '@/screens/PlayDetail/components/SettingPopup/settings/SettingLyricProgress'
+import SettingVolume from '@/screens/PlayDetail/components/SettingPopup/settings/SettingVolume'
+import SettingPlaybackRate from '@/screens/PlayDetail/components/SettingPopup/settings/SettingPlaybackRate'
+import SettingLrcFontSize from '@/screens/PlayDetail/components/SettingPopup/settings/SettingLrcFontSize'
+import SettingLrcAlign from '@/screens/PlayDetail/components/SettingPopup/settings/SettingLrcAlign'
+import SettingWatchFullscreen from '@/screens/PlayDetail/components/SettingPopup/settings/SettingWatchFullscreen'
 import TimeoutExitEditModal, { type TimeoutExitEditModalType, useTimeInfo } from '@/components/TimeoutExitEditModal'
 import Image from '@/components/common/Image'
 
@@ -128,6 +133,39 @@ const SeekBar = ({ progress, onSeek, height, dotSize, barColor, trackColor }: {
     </View>
   )
 }
+
+/**
+ * 播放器设置（整页）
+ *
+ * 原来是底部弹层（Modal + ScrollView），和全面屏/全屏歌词叠在一起非常容易卡死。
+ * 改成整页显示（和设置页一个形式）：一个 ScrollView + 顶部返回，不再有弹层窗口。
+ */
+const PlayerSettingsPage = memo(({ m, onClose }: { m: ReturnType<typeof makeMetrics>, onClose: () => void }) => {
+  const theme = useTheme()
+  const t = useI18n()
+  return (
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme['c-content-background'], zIndex: 998 }]}>
+      <View style={{ height: m.header, flexDirection: 'row', alignItems: 'center', paddingHorizontal: m.side * 0.4 }}>
+        <TouchableOpacity
+          style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
+          activeOpacity={0.6}
+          onPress={onClose}
+        >
+          <Icon name="chevron-left" size={m.iconMd} color={theme['c-primary']} />
+        </TouchableOpacity>
+        <Text size={m.fontMd} color={theme['c-primary']} numberOfLines={1}>{t('play_detail_setting_title')}</Text>
+      </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: m.side }}>
+        <SettingLyricProgress />
+        <SettingVolume />
+        <SettingPlaybackRate />
+        <SettingLrcFontSize direction="vertical" />
+        <SettingLrcAlign />
+        <SettingWatchFullscreen />
+      </ScrollView>
+    </View>
+  )
+})
 
 const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
   const theme = useTheme()
@@ -247,7 +285,6 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
     if (Date.now() - touchStartAt.current > 260) return
     toggleControls()
   }, [fsLyricEnabled, toggleControls])
-  const settingRef = useRef<SettingPopupType>(null)
   const timeoutRef = useRef<TimeoutExitEditModalType>(null)
   const timeInfo = useTimeInfo()
 
@@ -307,7 +344,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         <TouchableOpacity
           style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
           activeOpacity={0.6}
-          onPress={() => { setSettingOpen(true); settingRef.current?.show() }}
+          onPress={() => { setSettingOpen(true) }}
         >
           <Icon name="slider" size={m.iconMd} color={theme['c-350']} />
         </TouchableOpacity>
@@ -348,7 +385,7 @@ const WatchPlayer = memo(({ componentId }: { componentId: string }) => {
         </View>
       </PagerView>
 
-      <SettingPopup ref={settingRef} direction="vertical" onHide={() => { setSettingOpen(false) }} />
+      { settingOpen ? <PlayerSettingsPage m={m} onClose={() => { setSettingOpen(false) }} /> : null }
       <TimeoutExitEditModal ref={timeoutRef} timeInfo={timeInfo} />
 
       {/* 原版「添加歌曲到列表」弹窗 */}
