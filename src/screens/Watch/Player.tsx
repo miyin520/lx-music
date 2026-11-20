@@ -144,7 +144,18 @@ const PlayerSettingsPage = memo(({ m, onClose }: { m: ReturnType<typeof makeMetr
   const theme = useTheme()
   const t = useI18n()
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: theme['c-content-background'], zIndex: 998 }]}>
+    <View style={[
+      StyleSheet.absoluteFill,
+      {
+        backgroundColor: theme['c-content-background'],
+        zIndex: 998,
+        // 和其它整页一样避开状态栏 / 圆角 / 手势条
+        paddingTop: m.insetTop + m.cornerSafe * 0.6,
+        paddingBottom: Math.max(m.insetBottom, 14) + m.cornerSafe * 0.6,
+        paddingLeft: m.side * 0.3,
+        paddingRight: m.side * 0.3,
+      },
+    ]}>
       <View style={{ height: m.header, flexDirection: 'row', alignItems: 'center', paddingHorizontal: m.side * 0.4 }}>
         <TouchableOpacity
           style={{ width: m.touch, height: m.touch, alignItems: 'center', justifyContent: 'center' }}
