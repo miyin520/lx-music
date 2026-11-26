@@ -81,7 +81,13 @@ export default forwardRef<PlayLineType, PlayLineProps>(({ onPlayLine }, ref) => 
   const time = lyricLines[targetLineNum]?.time ?? 0
   const timeLabel = formatPlayTime2(time / 1000)
   return (
-    <Animated.View style={{ ...styles.playLine, opacity: opsAnim }}>
+    <Animated.View
+      style={{ ...styles.playLine, opacity: opsAnim }}
+      // 这个悬浮条（歌词行的 时间 + 播放按钮）自己处理点击，
+      // 不许把触摸冒泡给外层 —— 否则点它会顺带切换播放页控件显隐
+      onTouchStart={(e) => { e.stopPropagation() }}
+      onTouchEnd={(e) => { e.stopPropagation() }}
+    >
       <Text style={styles.label} color={theme['c-primary-font']} size={13}>{timeLabel}</Text>
       <View style={styles.lineContent}>
         <View style={{ ...styles.line, borderBottomColor: theme['c-primary-alpha-700'] }} />
